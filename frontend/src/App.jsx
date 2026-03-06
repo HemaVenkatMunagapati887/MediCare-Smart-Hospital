@@ -11,6 +11,7 @@ import AdminLayout from './layouts/AdminLayout'
 import Home from './pages/public/Home'
 import Login from './pages/public/Login'
 import Register from './pages/public/Register'
+import ForgotPassword from './pages/public/ForgotPassword'
 import Doctors from './pages/public/Doctors'
 import About from './pages/public/About'
 
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="about" element={<About />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
         </Route>
 
         {/* AI Routes (No Global Footer) */}

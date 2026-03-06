@@ -1,115 +1,193 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { HeartPulse, User, Stethoscope, ShieldCheck, Mail, Lock, LogIn } from 'lucide-react'
+import {
+  HeartPulse, Mail, Lock, LogIn, Eye, EyeOff,
+  ShieldCheck, Calendar, ClipboardList, CheckCircle2
+} from 'lucide-react'
+
+const FEATURES = [
+  { icon: Calendar,      text: 'Book & manage appointments online' },
+  { icon: ClipboardList, text: 'Access medical records anytime' },
+  { icon: ShieldCheck,   text: 'Secure, HIPAA-compliant platform' },
+]
 
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  const [email, setEmail]           = useState('')
+  const [password, setPassword]     = useState('')
+  const [showPassword, setShowPwd]  = useState(false)
+  const [remember, setRemember]     = useState(false)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
+  const { login }    = useAuth()
+  const navigate     = useNavigate()
+  const location     = useLocation()
+
+  // Show success toast if redirected from registration
+  useEffect(() => {
+    if (location.state?.registered) {
+      setSuccessMsg('Registration successful! Please sign in with your email and password.')
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
 
   const handleLogin = async (e) => {
-    e?.preventDefault()
+    e.preventDefault()
     setLoading(true)
     setError('')
     try {
       const res = await login({ email, password })
       const role = res?.data?.role || res?.role
-      if (role === 'admin') navigate('/admin')
-      else if (role === 'doctor') navigate('/doctor')
-      else navigate('/patient')
+      if (role === 'admin')        navigate('/admin')
+      else if (role === 'doctor')  navigate('/doctor')
+      else                         navigate('/patient')
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Login failed')
+      setError(err.response?.data?.message || err.message || 'Invalid email or password.')
       setLoading(false)
     }
   }
 
-  const demoLogin = (roleEmail) => {
-    setEmail(roleEmail)
-    setPassword('password123')
-    setTimeout(() => {
-      document.getElementById('login-btn').click()
-    }, 100)
-  }
-
   return (
-    <div className="min-h-[calc(100vh-70px)] flex items-center justify-center p-4 bg-gray-50 animate-fadeIn">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm mb-4">
-            <HeartPulse size={32} className="text-white" />
+    <div className="min-h-screen flex">
+
+      {/* ── Left Panel (branding) ── */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 flex-col justify-between p-12 relative overflow-hidden">
+        {/* Decorative circles */}
+        <div className="absolute -top-20 -left-20 w-72 h-72 bg-white/5 rounded-full" />
+        <div className="absolute -bottom-16 -right-16 w-64 h-64 bg-white/5 rounded-full" />
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+              <HeartPulse size={24} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-lg leading-none">MediCare+</p>
+              <p className="text-blue-200 text-xs">Smart Hospital Portal</p>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
-          <p className="text-gray-500 mt-2">Sign in to MediCare+ Hospital</p>
+
+          <h2 className="text-white text-4xl font-bold leading-tight mb-4">
+            Your health,<br />our priority.
+          </h2>
+          <p className="text-blue-200 text-base leading-relaxed max-w-sm">
+            Manage appointments, access medical records, and connect with your care team — all in one place.
+          </p>
         </div>
 
-        <div className="card shadow-md">
-          {/* Quick Demo Login */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest text-center mb-3">Quick Demo Login</p>
-            <div className="grid grid-cols-3 gap-2">
-              <button type="button" onClick={() => demoLogin('john@example.com')} className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all border border-blue-100">
-                <User size={18} />
-                <span className="text-xs font-semibold">Patient</span>
-              </button>
-              <button type="button" onClick={() => demoLogin('sneha@medicare.com')} className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all border border-teal-100">
-                <Stethoscope size={18} />
-                <span className="text-xs font-semibold">Doctor</span>
-              </button>
-              <button type="button" onClick={() => demoLogin('admin@medicare.com')} className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 transition-all border border-violet-100">
-                <ShieldCheck size={18} />
-                <span className="text-xs font-semibold">Admin</span>
-              </button>
+        <div className="relative z-10 space-y-4">
+          {FEATURES.map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Icon size={18} className="text-white" />
+              </div>
+              <p className="text-blue-100 text-sm">{text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Right Panel (form) ── */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-gray-50">
+        <div className="w-full max-w-md">
+
+          {/* Mobile logo */}
+          <div className="flex lg:hidden items-center gap-2 mb-8 justify-center">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+              <HeartPulse size={22} className="text-white" />
+            </div>
+            <div>
+              <p className="font-bold text-gray-900 leading-none">MediCare+</p>
+              <p className="text-gray-500 text-xs">Smart Hospital Portal</p>
             </div>
           </div>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-400 text-xs">or sign in manually</span>
-            </div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
+            <p className="text-gray-500 mt-1">Sign in to your account to continue</p>
           </div>
 
-          {error && <div className="mb-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 text-center animate-fadeIn">{error}</div>}
+          {/* Alerts */}
+          {successMsg && (
+            <div className="mb-5 flex items-start gap-2 bg-green-50 text-green-700 text-sm p-3.5 rounded-xl border border-green-200 animate-fadeIn">
+              <CheckCircle2 size={17} className="mt-0.5 flex-shrink-0" /><span>{successMsg}</span>
+            </div>
+          )}
+          {error && (
+            <div className="mb-5 flex items-start gap-2 bg-red-50 text-red-600 text-sm p-3.5 rounded-xl border border-red-100 animate-fadeIn">
+              <span className="mt-0.5 flex-shrink-0">⚠️</span><span>{error}</span>
+            </div>
+          )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
+          <form onSubmit={handleLogin} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
               <div className="relative">
-                <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
-                <input required type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com" className="form-input pl-10" />
+                <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="yourname@gmail.com"
+                  autoComplete="email"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white transition-all"
+                />
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
+
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-gray-700">Password</label>
+                <Link to="/forgot-password" className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
-                <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
-                <input required type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••" className="form-input pl-10" />
+                <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  required
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white transition-all"
+                />
+                <button type="button" onClick={() => setShowPwd(v => !v)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <a href="#" className="text-sm font-semibold text-blue-600 hover:text-blue-700">Forgot password?</a>
-            </div>
+            {/* Remember me */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer" />
+              <span className="text-sm text-gray-600">Keep me signed in</span>
+            </label>
 
-            <button id="login-btn" type="submit" disabled={loading}
-              className="w-full btn-primary py-3 flex items-center justify-center gap-2 mt-2">
+            {/* Submit */}
+            <button type="submit" disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
               {loading ? (
-                <svg className="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-              ) : <>SignIn <LogIn size={18} /></>}
+              ) : <><LogIn size={18} /> Sign In</>}
             </button>
           </form>
 
-          <p className="text-center text-gray-500 text-sm mt-6">
-            Don't have an account? <Link to="/register" className="text-blue-600 font-semibold hover:underline">Register here</Link>
+          <p className="text-center text-gray-500 text-sm mt-7 pt-5 border-t border-gray-200">
+            Don't have an account?{' '}
+            <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+              Create one
+            </Link>
           </p>
         </div>
       </div>

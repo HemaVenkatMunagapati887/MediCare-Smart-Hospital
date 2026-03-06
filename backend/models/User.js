@@ -18,7 +18,6 @@ const userSchema = mongoose.Schema(
         },
         password: {
             type: String,
-            required: [true, 'Please add a password'],
             minlength: 6,
             select: false,
         },
@@ -27,6 +26,24 @@ const userSchema = mongoose.Schema(
             enum: ['patient', 'doctor', 'admin'],
             default: 'patient',
         },
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
+        authProvider: {
+            type: [String],
+            enum: ['local', 'google'],
+            default: ['local'],
+        },
+        resetOtp: {
+            type: String,
+            select: false,
+        },
+        resetOtpExpire: {
+            type: Date,
+            select: false,
+        },
     },
     {
         timestamps: true,
@@ -34,9 +51,9 @@ const userSchema = mongoose.Schema(
 );
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) {
-        next();
+userSchema.pre('save', async function () {
+    if (!this.isModified('password') || !this.password) {
+        return;
     }
 
     const salt = await bcrypt.genSalt(10);

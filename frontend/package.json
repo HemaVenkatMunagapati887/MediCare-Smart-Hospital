@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "fuser -k 3000/tcp 2>/dev/null || true",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.4",
     "axios": "^1.4.0",
     "lucide-react": "^0.577.0",
     "react": "^18.2.0",
