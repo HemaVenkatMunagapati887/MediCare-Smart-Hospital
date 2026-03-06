@@ -16,13 +16,19 @@ export function AuthProvider({ children }) {
     return res
   }
 
+  const googleLogin = async ({ idToken, role }) => {
+    const res = await authService.googleLogin({ idToken, role })
+    setUser(res.data)
+    return res
+  }
+
   const logout = () => {
     authService.logout()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   )

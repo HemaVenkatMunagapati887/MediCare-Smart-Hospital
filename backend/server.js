@@ -47,10 +47,29 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(
-  PORT,
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
-);
+const server = app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
+
+// Handle port already in use
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`\n⚠️  Port ${PORT} is already in use. Killing existing process...`);
+    const { execSync } = require('child_process');
+    try {
+      execSync(`fuser -k ${PORT}/tcp`, { stdio: 'ignore' });
+      console.log(`✅ Port ${PORT} freed. Restarting...\n`);
+      setTimeout(() => {
+        server.listen(PORT);
+      }, 1000);
+    } catch (e) {
+      console.error(`❌ Could not free port ${PORT}. Please manually kill the process using: fuser -k ${PORT}/tcp`);
+      process.exit(1);
+    }
+  } else {
+    throw err;
+  }
+});
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {

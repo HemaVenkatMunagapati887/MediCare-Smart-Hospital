@@ -29,6 +29,15 @@ export const logout = async () => {
   }
 };
 
+// Google OAuth Login/Register
+export const googleLogin = async ({ idToken, role }) => {
+  const response = await api.post('/auth/google', { idToken, role });
+  if (response.data && response.data.token) {
+    localStorage.setItem('sh_user', JSON.stringify(response.data));
+  }
+  return response;
+};
+
 // Get Current User (Local cache)
 export const getCurrentUser = () => {
   try {
