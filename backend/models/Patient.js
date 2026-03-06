@@ -9,6 +9,8 @@ const patientSchema = new mongoose.Schema({
   phone: String,
   address: String,
   dateOfBirth: Date,
+  weight: Number,
+  height: Number,
   gender: {
     type: String,
     enum: ['Male', 'Female', 'Other']
@@ -17,11 +19,7 @@ const patientSchema = new mongoose.Schema({
     type: String,
     enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
   },
-  emergencyContact: {
-    name: String,
-    phone: String,
-    relationship: String
-  }
+  emergencyContact: String
 }, {
   timestamps: true
 });

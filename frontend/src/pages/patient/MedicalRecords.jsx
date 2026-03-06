@@ -1,29 +1,54 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { FileText, Download, Activity, HeartPulse, ShieldCheck, Microscope, Layers } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import api from '../../services/api'
 
 const TABS = ['Overview', 'Lab Reports', 'Prescriptions']
 
-const overview = [
-  { label: 'Blood Group', value: 'B+', icon: HeartPulse, color: 'text-red-500', bg: 'bg-red-50' },
-  { label: 'Weight', value: '72 kg', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { label: 'Height', value: '175 cm', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  { label: 'Allergies', value: 'Penicillin', icon: ShieldCheck, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-]
-
-const reports = [
-  { id: 1, name: 'Complete Blood Count (CBC)', date: '15 Feb 2026', doctor: 'Dr. Priya Sharma', type: 'Pathology', status: 'Normal' },
-  { id: 2, name: 'Lipid Profile', date: '02 Jan 2026', doctor: 'Dr. Ravi Kumar', type: 'Pathology', status: 'Attention Needed' },
-  { id: 3, name: 'Chest X-Ray', date: '10 Nov 2025', doctor: 'Dr. Sneha Patel', type: 'Radiology', status: 'Normal' },
-]
-
-const meds = [
-  { name: 'Paracetamol 500mg', dosage: '1-0-1 (After Food)', duration: '5 Days', status: 'Active' },
-  { name: 'Vitamin D3 60K', dosage: '1 per week', duration: '8 Weeks', status: 'Active' },
-  { name: 'Amoxicillin', dosage: '1-1-1 (After Food)', duration: '5 Days', status: 'Completed' },
-]
-
 export default function MedicalRecords() {
+  const { user } = useAuth()
   const [tab, setTab] = useState('Overview')
+  const [records, setRecords] = useState([])
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [recordsRes, profileRes] = await Promise.all([
+          api.get('/visits'),
+          api.get('/patients/me')
+        ])
+        setRecords(recordsRes.data.data || [])
+        setProfile(profileRes.data.data || {})
+      } catch (err) {
+        console.error('Error fetching records:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const overview = [
+    { label: 'Blood Group', value: profile?.bloodGroup || '??', icon: HeartPulse, color: 'text-red-500', bg: 'bg-red-50' },
+    { label: 'Weight', value: profile?.weight ? `${profile.weight} kg` : '-- kg', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'Height', value: profile?.height ? `${profile.height} cm` : '-- cm', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'Member Since', value: new Date(user?.createdAt).toLocaleDateString(), icon: ShieldCheck, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  ]
+
+  const labReports = records.filter(r => r.recordType === 'Lab Report')
+  const prescriptions = records.filter(r => r.recordType === 'Prescription')
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -76,40 +101,39 @@ export default function MedicalRecords() {
                 <tr>
                   <th className="py-4 px-6 text-xs font-bold text-gray-500 tracking-wider uppercase">Report Name</th>
                   <th className="py-4 px-6 text-xs font-bold text-gray-500 tracking-wider uppercase">Date</th>
-                  <th className="py-4 px-6 text-xs font-bold text-gray-500 tracking-wider uppercase">Prescribed By</th>
-                  <th className="py-4 px-6 text-xs font-bold text-gray-500 tracking-wider uppercase">Status</th>
+                  <th className="py-4 px-6 text-xs font-bold text-gray-500 tracking-wider uppercase">Doctor</th>
                   <th className="py-4 px-6 text-xs font-bold text-gray-500 tracking-wider uppercase text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {reports.map((r, i) => (
-                  <tr key={i} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center border border-purple-100 shadow-sm">
-                          <Microscope size={18} />
+                {labReports.length > 0 ? (
+                  labReports.map((r, i) => (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors group">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center border border-purple-100 shadow-sm">
+                            <Microscope size={18} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 text-sm">{r.title}</p>
+                            <p className="text-xs font-medium text-gray-500">Pathology</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-gray-900 text-sm">{r.name}</p>
-                          <p className="text-xs font-medium text-gray-500">{r.type}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600 font-medium">{r.date}</td>
-                    <td className="py-4 px-6 text-sm text-gray-900 font-semibold">{r.doctor}</td>
-                    <td className="py-4 px-6">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] uppercase font-bold tracking-widest ${r.status === 'Normal' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-orange-50 text-orange-700 border border-orange-200'
-                        }`}>
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <button className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition-colors inline-flex opacity-0 group-hover:opacity-100">
-                        <Download size={18} />
-                      </button>
-                    </td>
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-600 font-medium">{new Date(r.createdAt).toLocaleDateString()}</td>
+                      <td className="py-4 px-6 text-sm text-gray-900 font-semibold">Dr. {r.doctor?.name || 'Staff'}</td>
+                      <td className="py-4 px-6 text-right">
+                        <a href={r.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition-colors inline-flex opacity-0 group-hover:opacity-100">
+                          <Download size={18} />
+                        </a>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="text-center py-10 text-gray-500">No lab reports found.</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -118,31 +142,37 @@ export default function MedicalRecords() {
 
       {tab === 'Prescriptions' && (
         <div className="grid md:grid-cols-2 gap-4 animate-fadeIn">
-          {meds.map((m, i) => (
-            <div key={i} className="card p-5 border border-gray-100 shadow-sm flex items-start justify-between group hover:border-blue-200 transition-colors">
-              <div className="flex gap-4">
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100 shadow-inner flex-shrink-0">
-                  <span className="text-2xl font-bold text-blue-600">Rx</span>
+          {prescriptions.length > 0 ? (
+            prescriptions.map((m, i) => (
+              <div key={i} className="card p-5 border border-gray-100 shadow-sm flex items-start justify-between group hover:border-blue-200 transition-colors">
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100 shadow-inner flex-shrink-0">
+                    <span className="text-2xl font-bold text-blue-600">Rx</span>
+                  </div>
+                  <div className="space-y-1 mt-0.5">
+                    <h3 className="font-bold text-gray-900 text-base">{m.title}</h3>
+                    <p className="text-sm font-semibold text-blue-600">Issued by Dr. {m.doctor?.name || 'Staff'}</p>
+                    <p className="text-xs text-gray-500 font-medium">Date: {new Date(m.createdAt).toLocaleDateString()}</p>
+                  </div>
                 </div>
-                <div className="space-y-1 mt-0.5">
-                  <h3 className="font-bold text-gray-900 text-base">{m.name}</h3>
-                  <p className="text-sm font-semibold text-blue-600">{m.dosage}</p>
-                  <p className="text-xs text-gray-500 font-medium">Duration: {m.duration}</p>
+                <div className="flex flex-col items-end justify-between h-full">
+                  <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200">
+                    Active
+                  </span>
+                  <a href={m.fileUrl} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-blue-600 mt-2 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Download size={16} />
+                  </a>
                 </div>
               </div>
-              <div className="flex flex-col items-end justify-between h-full">
-                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${m.status === 'Active' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'
-                  }`}>
-                  {m.status}
-                </span>
-                <button className="text-gray-400 hover:text-blue-600 mt-2 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Download size={16} />
-                </button>
-              </div>
+            ))
+          ) : (
+            <div className="col-span-full py-10 text-center bg-white rounded-2xl border border-dashed border-gray-300">
+              <p className="text-gray-500">No prescriptions found.</p>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
   )
 }
+

@@ -16,20 +16,20 @@ export default function Login() {
     setLoading(true)
     setError('')
     try {
-      const res = await login({ email, password: password || 'demo123' })
+      const res = await login({ email, password })
       const role = res?.data?.role || res?.role
       if (role === 'admin') navigate('/admin')
       else if (role === 'doctor') navigate('/doctor')
       else navigate('/patient')
     } catch (err) {
-      setError(err.message || 'Login failed')
+      setError(err.response?.data?.message || err.message || 'Login failed')
       setLoading(false)
     }
   }
 
   const demoLogin = (roleEmail) => {
     setEmail(roleEmail)
-    setPassword('demo123')
+    setPassword('password123')
     setTimeout(() => {
       document.getElementById('login-btn').click()
     }, 100)
@@ -51,11 +51,11 @@ export default function Login() {
           <div className="mb-6">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest text-center mb-3">Quick Demo Login</p>
             <div className="grid grid-cols-3 gap-2">
-              <button type="button" onClick={() => demoLogin('patient@gmail.com')} className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all border border-blue-100">
+              <button type="button" onClick={() => demoLogin('john@example.com')} className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all border border-blue-100">
                 <User size={18} />
                 <span className="text-xs font-semibold">Patient</span>
               </button>
-              <button type="button" onClick={() => demoLogin('doctor@gmail.com')} className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all border border-teal-100">
+              <button type="button" onClick={() => demoLogin('sneha@medicare.com')} className="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all border border-teal-100">
                 <Stethoscope size={18} />
                 <span className="text-xs font-semibold">Doctor</span>
               </button>

@@ -1,24 +1,80 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { User, Mail, Phone, MapPin, Activity, Save, Key, UserCircle, Edit3, HeartPulse, CheckCircle, Calendar } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import api from '../../services/api'
 
 export default function Profile() {
+  const { user } = useAuth()
   const [editing, setEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   const [profile, setProfile] = useState({
-    name: 'Venkat R.',
-    email: 'patient@gmail.com',
-    phone: '+91 98765 43210',
-    dob: '1995-08-15',
-    bloodGroup: 'B+',
-    weight: '72',
-    height: '175',
-    address: '123 Main St, Hyderabad, TG 500081',
-    emergencyContact: '+91 99887 76655'
+    name: '',
+    email: '',
+    phone: '',
+    dob: '',
+    bloodGroup: '',
+    weight: '',
+    height: '',
+    address: '',
+    emergencyContact: ''
   })
 
-  const handleSave = () => {
-    setEditing(false)
-    alert('Profile updated successfully!')
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get('/patients/me')
+        const data = res.data.data
+        setProfile({
+          name: data.user?.name || user?.name || '',
+          email: data.user?.email || user?.email || '',
+          phone: data.phone || '',
+          dob: data.dateOfBirth ? data.dateOfBirth.split('T')[0] : '',
+          bloodGroup: data.bloodGroup || '',
+          weight: data.weight || '',
+          height: data.height || '',
+          address: data.address || '',
+          emergencyContact: data.emergencyContact || ''
+        })
+      } catch (err) {
+        console.error('Error fetching profile:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (user) fetchProfile()
+  }, [user])
+
+  const handleSave = async () => {
+    try {
+      setSaving(true)
+      await api.post('/patients', {
+        phone: profile.phone,
+        address: profile.address,
+        dateOfBirth: profile.dob,
+        weight: profile.weight,
+        height: profile.height,
+        bloodGroup: profile.bloodGroup,
+        emergencyContact: profile.emergencyContact
+      })
+      setEditing(false)
+      // Optional: Refresh data
+    } catch (err) {
+      alert('Failed to update profile: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -30,8 +86,10 @@ export default function Profile() {
         </div>
         {editing ? (
           <div className="flex gap-2">
-            <button className="btn-secondary px-6" onClick={() => setEditing(false)}>Cancel</button>
-            <button className="btn-primary flex items-center gap-2 px-6 shadow-md" onClick={handleSave}><Save size={16} /> Save Changes</button>
+            <button className="btn-secondary px-6" onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
+            <button className="btn-primary flex items-center gap-2 px-6 shadow-md" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving...' : <><Save size={16} /> Save Changes</>}
+            </button>
           </div>
         ) : (
           <button className="btn-secondary flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => setEditing(true)}>
@@ -45,12 +103,12 @@ export default function Profile() {
         <div className="card flex flex-col items-center justify-center p-8 text-center border-t-4 border-t-blue-600 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob"></div>
           <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-5xl font-bold shadow-lg mb-4 relative z-10 border-4 border-white">
-            {profile.name.charAt(0)}
+            {profile.name?.charAt(0) || 'P'}
           </div>
           <h2 className="text-2xl font-bold text-gray-900 z-10">{profile.name}</h2>
-          <p className="text-sm text-blue-600 font-semibold mt-1 mb-4 z-10 flex items-center justify-center gap-1.5"><HeartPulse size={14} /> Patient ID: PT-29384</p>
+          <p className="text-sm text-blue-600 font-semibold mt-1 mb-4 z-10 flex items-center justify-center gap-1.5"><HeartPulse size={14} /> {user?.role}</p>
           <span className="px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-bold rounded-full flex items-center gap-1 shadow-sm">
-            <CheckCircle size={14} /> Profile 100% Complete
+            <CheckCircle size={14} /> Profile Verified
           </span>
         </div>
 
@@ -64,7 +122,7 @@ export default function Profile() {
               {editing ? (
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-3.5 text-gray-400" />
-                  <input type="text" className="form-input pl-10 pt-2 pb-2 bg-gray-50 focus:bg-white" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} />
+                  <input type="text" className="form-input pl-10 pt-2 pb-2 bg-gray-50 focus:bg-white" value={profile.name} disabled={true} />
                 </div>
               ) : (
                 <p className="font-semibold text-gray-900 text-base mt-1 flex items-center gap-2"><User size={16} className="text-gray-400" /> {profile.name}</p>
@@ -76,7 +134,7 @@ export default function Profile() {
               {editing ? (
                 <div className="relative">
                   <Mail size={16} className="absolute left-3 top-3.5 text-gray-400" />
-                  <input type="email" className="form-input pl-10 pt-2 pb-2 bg-gray-50 focus:bg-white" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
+                  <input type="email" className="form-input pl-10 pt-2 pb-2 bg-gray-50 focus:bg-white" value={profile.email} disabled={true} />
                 </div>
               ) : (
                 <p className="font-semibold text-gray-900 text-base mt-1 flex items-center gap-2"><Mail size={16} className="text-gray-400" /> {profile.email}</p>
@@ -91,7 +149,7 @@ export default function Profile() {
                   <input type="tel" className="form-input pl-10 pt-2 pb-2 bg-gray-50 focus:bg-white" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} />
                 </div>
               ) : (
-                <p className="font-semibold text-gray-900 text-base mt-1 flex items-center gap-2"><Phone size={16} className="text-gray-400" /> {profile.phone}</p>
+                <p className="font-semibold text-gray-900 text-base mt-1 flex items-center gap-2"><Phone size={16} className="text-gray-400" /> {profile.phone || 'Not provided'}</p>
               )}
             </div>
 
@@ -100,7 +158,7 @@ export default function Profile() {
               {editing ? (
                 <input type="date" className="form-input py-2 bg-gray-50 focus:bg-white" value={profile.dob} onChange={e => setProfile({ ...profile, dob: e.target.value })} />
               ) : (
-                <p className="font-semibold text-gray-900 text-base mt-1 flex items-center gap-2"><Calendar size={16} className="text-gray-400" /> {new Date(profile.dob).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p className="font-semibold text-gray-900 text-base mt-1 flex items-center gap-2"><Calendar size={16} className="text-gray-400" /> {profile.dob ? new Date(profile.dob).toLocaleDateString('en-GB') : 'Not provided'}</p>
               )}
             </div>
 
@@ -112,7 +170,7 @@ export default function Profile() {
                   <textarea rows={2} className="form-input pl-10 py-2 bg-gray-50 focus:bg-white resize-none" value={profile.address} onChange={e => setProfile({ ...profile, address: e.target.value })} />
                 </div>
               ) : (
-                <p className="font-semibold text-gray-900 text-base mt-1 flex items-start gap-2"><MapPin size={16} className="text-gray-400 mt-0.5 flex-shrink-0" /> {profile.address}</p>
+                <p className="font-semibold text-gray-900 text-base mt-1 flex items-start gap-2"><MapPin size={16} className="text-gray-400 mt-0.5 flex-shrink-0" /> {profile.address || 'Not provided'}</p>
               )}
             </div>
           </div>
@@ -126,10 +184,11 @@ export default function Profile() {
               <label className="text-xs font-bold uppercase text-red-600 block mb-1">Blood</label>
               {editing ? (
                 <select className="w-full bg-white border border-red-200 text-red-900 text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block p-2" value={profile.bloodGroup} onChange={e => setProfile({ ...profile, bloodGroup: e.target.value })}>
+                  <option value="">Select</option>
                   <option>A+</option><option>B+</option><option>O+</option><option>AB+</option><option>A-</option><option>B-</option><option>O-</option><option>AB-</option>
                 </select>
               ) : (
-                <p className="text-2xl font-extrabold text-red-700">{profile.bloodGroup}</p>
+                <p className="text-2xl font-extrabold text-red-700">{profile.bloodGroup || '??'}</p>
               )}
             </div>
 
@@ -140,7 +199,7 @@ export default function Profile() {
               {editing ? (
                 <input type="number" className="w-full bg-white border border-blue-200 text-blue-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2" value={profile.weight} onChange={e => setProfile({ ...profile, weight: e.target.value })} />
               ) : (
-                <p className="text-2xl font-extrabold text-blue-700">{profile.weight} <span className="text-sm font-semibold opacity-70">kg</span></p>
+                <p className="text-2xl font-extrabold text-blue-700">{profile.weight || '--'} <span className="text-sm font-semibold opacity-70">kg</span></p>
               )}
             </div>
 
@@ -151,7 +210,7 @@ export default function Profile() {
               {editing ? (
                 <input type="number" className="w-full bg-white border border-emerald-200 text-emerald-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2" value={profile.height} onChange={e => setProfile({ ...profile, height: e.target.value })} />
               ) : (
-                <p className="text-2xl font-extrabold text-emerald-700">{profile.height} <span className="text-sm font-semibold opacity-70">cm</span></p>
+                <p className="text-2xl font-extrabold text-emerald-700">{profile.height || '--'} <span className="text-sm font-semibold opacity-70">cm</span></p>
               )}
             </div>
 
@@ -162,7 +221,7 @@ export default function Profile() {
               {editing ? (
                 <input type="tel" className="w-full bg-white border border-orange-200 text-orange-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block p-2" value={profile.emergencyContact} onChange={e => setProfile({ ...profile, emergencyContact: e.target.value })} />
               ) : (
-                <p className="text-lg font-extrabold text-orange-700 tracking-tight">{profile.emergencyContact}</p>
+                <p className="text-lg font-extrabold text-orange-700 tracking-tight truncate px-1">{profile.emergencyContact || 'None'}</p>
               )}
             </div>
           </div>
@@ -171,3 +230,4 @@ export default function Profile() {
     </div>
   )
 }
+

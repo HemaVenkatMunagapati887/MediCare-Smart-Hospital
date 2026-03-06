@@ -1,33 +1,45 @@
-// Simple frontend-only auth service for demo purposes
-export function login({ email, password }) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      let role = 'patient'
-      if (email.includes('doctor')) role = 'doctor'
-      if (email.includes('admin')) role = 'admin'
+import api from './api';
 
-      const user = {
-        name: email.split('@')[0],
-        email,
-        role,
-        token: 'demo-token'
-      }
-
-      localStorage.setItem('sh_user', JSON.stringify(user))
-
-      resolve({ data: user })
-    }, 400)
-  })
-}
-
-export function logout() {
-  localStorage.removeItem('sh_user')
-}
-
-export function getCurrentUser() {
-  try {
-    return JSON.parse(localStorage.getItem('sh_user'))
-  } catch (e) {
-    return null
+// Register User
+export const register = async (userData) => {
+  const response = await api.post('/auth/register', userData);
+  if (response.data && response.data.token) {
+    localStorage.setItem('sh_user', JSON.stringify(response.data));
   }
-}
+  return response;
+};
+
+// Login User
+export const login = async (credentials) => {
+  const response = await api.post('/auth/login', credentials);
+  if (response.data && response.data.token) {
+    localStorage.setItem('sh_user', JSON.stringify(response.data));
+  }
+  return response;
+};
+
+// Logout User
+export const logout = async () => {
+  try {
+    await api.get('/auth/logout');
+  } catch (err) {
+    // Ignore error, clear local storage anyway
+  } finally {
+    localStorage.removeItem('sh_user');
+  }
+};
+
+// Get Current User (Local cache)
+export const getCurrentUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('sh_user'));
+  } catch (e) {
+    return null;
+  }
+};
+
+// Fetch fresh User Profile from Server
+export const getMe = async () => {
+  const response = await api.get('/auth/me');
+  return response.data;
+};

@@ -2,7 +2,8 @@ const express = require('express');
 const {
   getPatients,
   getPatient,
-  updatePatientProfile
+  updatePatientProfile,
+  getMyProfile
 } = require('../controllers/patientController');
 
 const router = express.Router();
@@ -17,6 +18,7 @@ router
   .get(authorize('admin', 'doctor'), getPatients)
   .post(updatePatientProfile);
 
+router.route('/me').get(getMyProfile);
 router.route('/:id').get(getPatient);
 
 module.exports = router;

@@ -6,14 +6,36 @@ export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '', terms: false })
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (form.password !== form.confirm) return alert("Passwords do not match!")
-    if (!form.terms) return alert("You must agree to the terms.")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-    // Demo registration - usually you'd call an API here
-    alert("Registration successful! Please login.")
-    navigate('/login')
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (form.password !== form.confirm) {
+        setError("Passwords do not match!")
+        return;
+    }
+    if (!form.terms) {
+        setError("You must agree to the terms.")
+        return;
+    }
+
+    setLoading(true)
+    setError('')
+    try {
+        const { register } = await import('../../services/auth')
+        await register({
+            name: form.name,
+            email: form.email,
+            password: form.password,
+            role: 'patient' // Defaulting registration to patient
+        })
+        setLoading(false)
+        navigate('/patient')
+    } catch (err) {
+        setError(err.response?.data?.message || err.message || 'Registration failed')
+        setLoading(false)
+    }
   }
 
   const update = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
@@ -30,6 +52,8 @@ export default function Register() {
         </div>
 
         <div className="card shadow-md">
+          {error && <div className="mb-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 text-center animate-fadeIn">{error}</div>}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="form-group">
               <label className="form-label">Full Name</label>
@@ -88,8 +112,13 @@ export default function Register() {
               </label>
             </div>
 
-            <button type="submit" className="w-full btn-primary py-3 flex items-center justify-center gap-2">
-              <ShieldCheck size={18} /> Create Patient Account
+            <button type="submit" disabled={loading} className="w-full btn-primary py-3 flex items-center justify-center gap-2">
+              {loading ? (
+                <svg className="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : <><ShieldCheck size={18} /> Create Patient Account</>}
             </button>
           </form>
 

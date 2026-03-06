@@ -55,3 +55,32 @@ exports.updatePatientProfile = asyncHandler(async (req, res, next) => {
     data: patient
   });
 });
+
+// @desc    Get current user patient profile
+// @route   GET /api/v1/patients/me
+// @access  Private
+exports.getMyProfile = asyncHandler(async (req, res, next) => {
+  let patient = await Patient.findOne({ user: req.user.id }).populate('user', 'name email');
+
+  if (!patient) {
+    // Return empty profile object instead of error to allow frontend to handle "new profile" state
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: req.user,
+        phone: '',
+        address: '',
+        dateOfBirth: null,
+        weight: null,
+        height: null,
+        bloodGroup: '',
+        emergencyContact: ''
+      }
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: patient
+  });
+});
