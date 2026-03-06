@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const Patient = require('../models/Patient');
+const Doctor = require('../models/Doctor');
 const asyncHandler = require('express-async-handler');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
@@ -33,6 +35,22 @@ exports.register = asyncHandler(async (req, res, next) => {
   });
 
   if (user) {
+    // Create actual profile record in Patient / Doctor collection
+    if (user.role === 'patient') {
+      await Patient.create({
+        user: user._id,
+        gender: 'Male', // Default or from req.body
+        bloodGroup: 'O+'
+      });
+    } else if (user.role === 'doctor') {
+      await Doctor.create({
+        user: user._id,
+        specialization: 'General',
+        experience: 0,
+        fees: 0
+      });
+    }
+
     res.status(201).json({
       success: true,
       _id: user._id,
@@ -139,6 +157,22 @@ exports.googleAuth = async (req, res) => {
           authProvider: ['google'],
           role: role || 'patient',
         });
+
+        // Create actual profile record in Patient / Doctor collection
+        if (user.role === 'patient') {
+          await Patient.create({
+            user: user._id,
+            gender: 'Male',
+            bloodGroup: 'O+'
+          });
+        } else if (user.role === 'doctor') {
+          await Doctor.create({
+            user: user._id,
+            specialization: 'General',
+            experience: 0,
+            fees: 0
+          });
+        }
       }
     }
 
@@ -213,6 +247,22 @@ exports.googleRegister = async (req, res) => {
       role: role || 'patient',
       authProvider: ['google', 'local'],
     });
+
+    // Create actual profile record in Patient / Doctor collection
+    if (user.role === 'patient') {
+      await Patient.create({
+        user: user._id,
+        gender: 'Male',
+        bloodGroup: 'O+'
+      });
+    } else if (user.role === 'doctor') {
+      await Doctor.create({
+        user: user._id,
+        specialization: 'General',
+        experience: 0,
+        fees: 0
+      });
+    }
 
     res.status(201).json({ success: true, message: 'Registration successful! Please login with your email and password.' });
   } catch (err) {

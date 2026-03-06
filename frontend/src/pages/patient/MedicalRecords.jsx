@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FileText, Download, Activity, HeartPulse, ShieldCheck, Microscope, Layers } from 'lucide-react'
+import { FileText, Download, Activity, HeartPulse, ShieldCheck, Microscope, Layers, UserCircle, Thermometer } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 
@@ -12,8 +12,48 @@ export default function MedicalRecords() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const isDemoUser = user?.email === 'john@example.com' || user?.email === 'jane@example.com'
+
   useEffect(() => {
     const fetchData = async () => {
+      if (isDemoUser) {
+        // John Doe Demo Data
+        setRecords([
+          { 
+            _id: 'r1', 
+            recordType: 'Lab Report', 
+            title: 'Full Blood Count', 
+            createdAt: '2026-02-12', 
+            doctor: { name: 'Ravi Kumar' },
+            fileUrl: '#' 
+          },
+          { 
+            _id: 'r2', 
+            recordType: 'Prescription', 
+            title: 'Sumatriptan 50mg', 
+            createdAt: '2026-02-15', 
+            doctor: { name: 'Priya Sharma' },
+            fileUrl: '#',
+            status: 'Active'
+          },
+          { 
+            _id: 'r3', 
+            recordType: 'Lab Report', 
+            title: 'Lipid Profile', 
+            createdAt: '2026-01-05', 
+            doctor: { name: 'Ravi Kumar' },
+            fileUrl: '#' 
+          }
+        ])
+        setProfile({
+          bloodGroup: 'B+',
+          weight: 72,
+          height: 175
+        })
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
         const [recordsRes, profileRes] = await Promise.all([
@@ -30,17 +70,17 @@ export default function MedicalRecords() {
     }
 
     fetchData()
-  }, [])
+  }, [user, isDemoUser])
 
   const overview = [
-    { label: 'Blood Group', value: profile?.bloodGroup || '??', icon: HeartPulse, color: 'text-red-500', bg: 'bg-red-50' },
+    { label: 'Blood Group', value: profile?.bloodGroup || (isDemoUser ? 'B+' : '??'), icon: HeartPulse, color: 'text-red-500', bg: 'bg-red-50' },
     { label: 'Weight', value: profile?.weight ? `${profile.weight} kg` : '-- kg', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50' },
     { label: 'Height', value: profile?.height ? `${profile.height} cm` : '-- cm', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'Member Since', value: new Date(user?.createdAt).toLocaleDateString(), icon: ShieldCheck, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+    { label: 'Member Since', value: new Date(user?.createdAt || Date.now()).toLocaleDateString(), icon: ShieldCheck, color: 'text-yellow-600', bg: 'bg-yellow-50' },
   ]
 
-  const labReports = records.filter(r => r.recordType === 'Lab Report')
-  const prescriptions = records.filter(r => r.recordType === 'Prescription')
+  const labReports = records.filter(r => r.recordType === 'Lab Report' || r.type === 'Lab Report')
+  const prescriptions = records.filter(r => r.recordType === 'Prescription' || r.type === 'Prescription')
 
   if (loading) {
     return (
@@ -59,6 +99,7 @@ export default function MedicalRecords() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
       <div className="bg-white p-1.5 rounded-xl border border-gray-100 shadow-sm flex overflow-x-auto no-scrollbar w-fit">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
@@ -70,6 +111,7 @@ export default function MedicalRecords() {
         ))}
       </div>
 
+      {/* Tab Content */}
       {tab === 'Overview' && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fadeIn">
           {overview.map(o => (
@@ -123,15 +165,15 @@ export default function MedicalRecords() {
                       <td className="py-4 px-6 text-sm text-gray-600 font-medium">{new Date(r.createdAt).toLocaleDateString()}</td>
                       <td className="py-4 px-6 text-sm text-gray-900 font-semibold">Dr. {r.doctor?.name || 'Staff'}</td>
                       <td className="py-4 px-6 text-right">
-                        <a href={r.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition-colors inline-flex opacity-0 group-hover:opacity-100">
+                        <button className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition-colors inline-flex sm:opacity-0 group-hover:opacity-100">
                           <Download size={18} />
-                        </a>
+                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="text-center py-10 text-gray-500">No lab reports found.</td>
+                    <td colSpan="4" className="text-center py-12 text-gray-500 italic">No lab reports found.</td>
                   </tr>
                 )}
               </tbody>
@@ -141,7 +183,7 @@ export default function MedicalRecords() {
       )}
 
       {tab === 'Prescriptions' && (
-        <div className="grid md:grid-cols-2 gap-4 animate-fadeIn">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadeIn">
           {prescriptions.length > 0 ? (
             prescriptions.map((m, i) => (
               <div key={i} className="card p-5 border border-gray-100 shadow-sm flex items-start justify-between group hover:border-blue-200 transition-colors">
@@ -159,15 +201,16 @@ export default function MedicalRecords() {
                   <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200">
                     Active
                   </span>
-                  <a href={m.fileUrl} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-blue-600 mt-2 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button className="text-gray-400 hover:text-blue-600 mt-2 p-1.5 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                     <Download size={16} />
-                  </a>
+                  </button>
                 </div>
               </div>
             ))
           ) : (
-            <div className="col-span-full py-10 text-center bg-white rounded-2xl border border-dashed border-gray-300">
-              <p className="text-gray-500">No prescriptions found.</p>
+            <div className="col-span-full py-12 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+              <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500 italic">No prescriptions found.</p>
             </div>
           )}
         </div>
@@ -175,4 +218,3 @@ export default function MedicalRecords() {
     </div>
   )
 }
-

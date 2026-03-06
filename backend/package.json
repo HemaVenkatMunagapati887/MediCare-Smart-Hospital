@@ -4,7 +4,6 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "predev": "fuser -k 5000/tcp 2>/dev/null || true",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "data:import": "node seeder.js -i",

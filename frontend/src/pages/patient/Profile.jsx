@@ -23,6 +23,23 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      // Demo Data for John Doe
+      if (user?.email === 'john@example.com') {
+        setProfile({
+          name: 'John Doe',
+          email: 'john@example.com',
+          phone: '+91 98765 43210',
+          dob: '1995-08-15',
+          bloodGroup: 'B+',
+          weight: '72',
+          height: '175',
+          address: '123 Main St, Hyderabad, TG 500081',
+          emergencyContact: '+91 99887 76655'
+        })
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
         const res = await api.get('/patients/me')
@@ -49,6 +66,12 @@ export default function Profile() {
   }, [user])
 
   const handleSave = async () => {
+    if (user?.email === 'john@example.com') {
+      alert('Demo profiles cannot be modified.')
+      setEditing(false)
+      return
+    }
+
     try {
       setSaving(true)
       await api.post('/patients', {
@@ -61,7 +84,6 @@ export default function Profile() {
         emergencyContact: profile.emergencyContact
       })
       setEditing(false)
-      // Optional: Refresh data
     } catch (err) {
       alert('Failed to update profile: ' + (err.response?.data?.message || err.message))
     } finally {
@@ -230,4 +252,5 @@ export default function Profile() {
     </div>
   )
 }
+
 

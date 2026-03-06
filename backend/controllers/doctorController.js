@@ -56,6 +56,23 @@ exports.createDoctor = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get current doctor profile
+// @route   GET /api/v1/doctors/me
+// @access  Private/Doctor
+exports.getMyProfile = asyncHandler(async (req, res, next) => {
+  const doctor = await Doctor.findOne({ user: req.user.id }).populate('user', 'name email');
+
+  if (!doctor) {
+    res.status(404);
+    throw new Error('Doctor profile not found for this user');
+  }
+
+  res.status(200).json({
+    success: true,
+    data: doctor
+  });
+});
+
 // @desc    Update doctor profile
 // @route   PUT /api/v1/doctors/:id
 // @access  Private/Doctor/Admin

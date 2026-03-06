@@ -1,21 +1,89 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Calendar, Clock, Video, FileText, CheckCircle, Search, Save, Upload, Activity, AlertCircle, X, ChevronRight, Check } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import api from '../../services/api'
 
 export default function Diagnosis() {
-  const [patient, setPatient] = useState('')
+  const { user } = useAuth()
+  const [appointments, setAppointments] = useState([])
+  const [patientId, setPatientId] = useState('')
   const [diag, setDiag] = useState('')
   const [rx, setRx] = useState('')
   const [notes, setNotes] = useState('')
   const [saved, setSaved] = useState(false)
+  const [loadingPatients, setLoadingPatients] = useState(true)
 
-  const handleSave = (e) => {
+  const isDemoDoctor = user?.email === 'sneha@medicare.com' || user?.email === 'suresh@medicare.com'
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      if (isDemoDoctor) {
+        setAppointments([
+          { _id: 'd1', patient: { _id: 'p1', name: 'Venkat R.' }, timeSlot: '10:30 AM' },
+          { _id: 'd2', patient: { _id: 'p2', name: 'Rahul K.' }, timeSlot: '11:00 AM' },
+          { _id: 'd3', patient: { _id: 'p3', name: 'Anitha S.' }, timeSlot: '11:30 AM' }
+        ])
+        setLoadingPatients(false)
+        return
+      }
+
+      try {
+        setLoadingPatients(true)
+        const profRes = await api.get('/doctors/me')
+        const apptRes = await api.get(`/appointments/doctor/${profRes.data.data._id}`)
+        // Filter to in-progress or confirmed only for diagnosis
+        setAppointments(apptRes.data.data.filter(a => a.status !== 'cancelled' && a.status !== 'completed'))
+      } catch (err) {
+        console.error("Diagnosis patient fetch error:", err)
+      } finally {
+        setLoadingPatients(false)
+      }
+    }
+
+    if (user) fetchPatients()
+  }, [user, isDemoDoctor])
+
+  const handleSave = async (e) => {
     e.preventDefault()
-    setSaved(true)
-    setTimeout(() => {
-      setSaved(false)
-      setPatient(''); setDiag(''); setRx(''); setNotes('')
-    }, 3000)
+    
+    if (isDemoDoctor) {
+      setSaved(true)
+      setTimeout(() => {
+        setSaved(false)
+        setPatientId(''); setDiag(''); setRx(''); setNotes('')
+      }, 3000)
+      return
+    }
+
+    try {
+      // Find the appointment for this patient to mark it as completed
+      const appointment = appointments.find(a => a.patient?._id === patientId);
+      
+      // Create the visit record
+      await api.post('/visits', {
+        patient: patientId,
+        title: diag,
+        description: notes,
+        recordType: 'Prescription',
+        notes: rx
+      })
+
+      // Update appointment status to completed if it exists
+      if (appointment && !String(appointment._id).startsWith('d')) {
+        await api.put(`/appointments/${appointment._id}`, { status: 'completed' })
+      }
+
+      setSaved(true)
+      setTimeout(() => {
+        setSaved(false)
+        setPatientId(''); setDiag(''); setRx(''); setNotes('')
+      }, 3000)
+    } catch (err) {
+      console.error("Save diagnosis failed:", err)
+    }
   }
+
+  const selectedPatientData = appointments.find(a => a.patient?._id === patientId)
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -32,7 +100,6 @@ export default function Diagnosis() {
       )}
 
       <form onSubmit={handleSave} className="grid md:grid-cols-3 gap-6">
-        {/* Main column */}
         <div className="md:col-span-2 space-y-6 flex flex-col h-full">
           <div className="card shadow-sm border border-gray-100 flex-1">
             <h2 className="font-bold text-gray-900 border-b border-gray-100 pb-4 mb-4 flex items-center gap-2">
@@ -42,11 +109,12 @@ export default function Diagnosis() {
             <div className="space-y-5">
               <div className="form-group">
                 <label className="form-label text-xs font-bold uppercase text-gray-500 tracking-wider">Select Patient</label>
-                <select required className="form-input focus:ring-teal-500 focus:border-teal-500 bg-gray-50 focus:bg-white" value={patient} onChange={e => setPatient(e.target.value)}>
+                <select required className="form-input focus:ring-teal-500 focus:border-teal-500 bg-gray-50 focus:bg-white" value={patientId} onChange={e => setPatientId(e.target.value)}>
                   <option value="">-- Choose from today's appts --</option>
-                  <option>Venkat R. (10:30 AM)</option>
-                  <option>Rahul K. (11:00 AM)</option>
-                  <option>Anitha S. (11:30 AM)</option>
+                  {appointments.map(a => (
+                    <option key={a._id} value={a.patient?._id}>{a.patient?.name} ({a.timeSlot})</option>
+                  ))}
+                  {appointments.length === 0 && !loadingPatients && <option disabled>No active appointments</option>}
                 </select>
               </div>
 
@@ -75,11 +143,10 @@ export default function Diagnosis() {
           </button>
         </div>
 
-        {/* Right sidebar */}
         <div className="space-y-6">
           <div className="card shadow-sm border border-gray-100 bg-teal-50">
             <h3 className="font-bold text-gray-900 border-b border-teal-100 pb-3 mb-4 text-sm uppercase tracking-wider">Reference Area</h3>
-            {!patient ? (
+            {!patientId ? (
               <div className="text-center py-6">
                 <Search size={32} className="mx-auto text-teal-200 mb-2" />
                 <p className="text-sm text-gray-500 font-medium">Select a patient to load their history here automatically.</p>
@@ -87,17 +154,13 @@ export default function Diagnosis() {
             ) : (
               <div className="space-y-4 animate-fadeIn">
                 <div className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
-                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Previous Visit</p>
-                  <p className="text-sm font-bold text-gray-900">15 Feb 2026</p>
-                  <p className="text-xs text-gray-600 mt-1">Diagnosis: Routine checkup. All vitals normal.</p>
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Current Appointment</p>
+                  <p className="text-sm font-bold text-gray-900">{selectedPatientData?.timeSlot}</p>
+                  <p className="text-xs text-gray-600 mt-1">Status: {selectedPatientData?.status}</p>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-red-100 shadow-sm border-l-4 border-l-red-500">
-                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Allergies</p>
-                  <p className="text-sm font-bold text-red-700">Penicillin</p>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
-                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Active Meds</p>
-                  <p className="text-sm font-medium text-gray-800">Vitamin D3 60K (Weekly)</p>
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Key Detail</p>
+                  <p className="text-sm font-bold text-red-700">{isDemoDoctor ? 'Penicillin Allergy' : 'Loading patient records...'}</p>
                 </div>
               </div>
             )}
@@ -115,3 +178,4 @@ export default function Diagnosis() {
     </div>
   )
 }
+

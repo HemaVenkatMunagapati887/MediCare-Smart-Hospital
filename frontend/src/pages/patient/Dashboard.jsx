@@ -8,19 +8,68 @@ export default function PatientDashboard() {
   const { user } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [visits, setVisits] = useState([])
+  const [patientProfile, setPatientProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Demo User Check
+  const isDemoUser = user?.email === 'john@example.com' || user?.email === 'jane@example.com'
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
-        // Fetch appointments for this specific patient
-        const apptRes = await api.get(`/appointments/patient/${user._id || user.id}`)
-        setAppointments(apptRes.data.data || [])
         
-        // Fetch medical visits/records
-        const visitsRes = await api.get('/visits')
-        setVisits(visitsRes.data.data || [])
+        let realAppts = []
+        let realVisits = []
+
+        // Fetch real data regardless of demo status (to show newly booked items)
+        if (user?._id || user?.id) {
+          try {
+            const [apptRes, visitsRes, profileRes] = await Promise.all([
+               api.get(`/appointments/patient/${user._id || user.id}`),
+               api.get('/visits'),
+               api.get('/patients/me')
+            ])
+
+            realAppts = apptRes.data.data || []
+            realVisits = visitsRes.data.data || []
+            setPatientProfile(profileRes.data.data)
+          } catch (e) {
+            console.error("Fetch real data error:", e)
+          }
+        }
+
+        if (isDemoUser) {
+          const demoAppts = [
+            { 
+              _id: 'demo1',
+              doctor: { user: { name: 'Ravi Kumar' }, specialization: 'Cardiologist' },
+              date: '2026-03-12', 
+              timeSlot: '10:30 AM', 
+              status: 'confirmed', 
+              reason: 'Routine Checkup' 
+            },
+            { 
+              _id: 'demo2',
+              doctor: { user: { name: 'Priya Sharma' }, specialization: 'Neurologist' },
+              date: '2026-03-15', 
+              timeSlot: '02:00 PM', 
+              status: 'pending', 
+              reason: 'Migraine tracking' 
+            }
+          ]
+          const demoVisits = [
+            { createdAt: '2026-02-15', doctor: { name: 'Priya Sharma' }, title: 'Migraine tracking' },
+            { createdAt: '2026-01-02', doctor: { name: 'Ravi Kumar' }, title: 'Routine Checkup' }
+          ]
+          
+          // Combine demo and real data
+          setAppointments([...demoAppts, ...realAppts])
+          setVisits([...demoVisits, ...realVisits])
+        } else {
+          setAppointments(realAppts)
+          setVisits(realVisits)
+        }
       } catch (err) {
         console.error("Dashboard fetch error:", err)
       } finally {
@@ -28,15 +77,15 @@ export default function PatientDashboard() {
       }
     }
 
-    if (user?._id || user?.id) {
+    if (user?._id || user?.id || isDemoUser) {
       fetchDashboardData()
     }
-  }, [user])
+  }, [user, isDemoUser])
 
   const stats = [
     { label: 'Upcoming Appts', value: appointments.length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Total Visits', value: visits.length, icon: User, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Lab Reports', value: 0, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Total Visits', value: isDemoUser ? 12 : visits.length, icon: User, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Lab Reports', value: isDemoUser ? 3 : 0, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
   ]
 
   if (loading) {
@@ -53,7 +102,7 @@ export default function PatientDashboard() {
       <div className="card bg-gradient-to-r from-blue-600 to-blue-800 text-white border-none shadow-lg !p-8">
         <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name || 'Patient'}! 👋</h1>
         <p className="text-blue-100 mb-6 max-w-xl">
-          Your health dashboard is ready. You have {appointments.length} upcoming appointments.
+          Your health dashboard is ready. {appointments.length > 0 ? `You have ${appointments.length} upcoming appointments.` : 'You have no appointments scheduled today.'}
         </p>
         <div className="flex flex-wrap gap-4">
           <Link to="/patient/book" className="px-5 py-2.5 bg-white text-blue-700 font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 text-sm">
@@ -183,8 +232,9 @@ export default function PatientDashboard() {
             <div className="p-5 space-y-4">
               {[
                 { label: 'Role', value: user?.role, icon: ShieldCheck, color: 'text-blue-600' },
-                { label: 'Email', value: user?.email, icon: Mail, color: 'text-blue-500' },
-                { label: 'Member Since', value: new Date(user?.createdAt || Date.now()).toLocaleDateString(), icon: Clock, color: 'text-emerald-500' },
+                { label: 'Blood Group', value: isDemoUser ? 'B+' : patientProfile?.bloodGroup, icon: HeartPulse, color: 'text-red-500' },
+                { label: 'Gender', value: isDemoUser ? 'Male' : patientProfile?.gender, icon: User, color: 'text-teal-500' },
+                { label: 'Joined', value: new Date(user?.createdAt || Date.now()).toLocaleDateString(), icon: Clock, color: 'text-emerald-500' },
               ].map(item => (
                 item.value && (
                   <div key={item.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
@@ -209,7 +259,6 @@ export default function PatientDashboard() {
   )
 }
 
-// Add simple Mail icon for the info card
 function Mail({ size, className }) {
   return (
     <svg 
@@ -228,4 +277,5 @@ function Mail({ size, className }) {
     </svg>
   );
 }
+
 

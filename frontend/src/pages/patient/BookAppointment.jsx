@@ -1,24 +1,71 @@
-import React, { useState } from 'react'
-import { Calendar, Clock, User, CheckCircle, ChevronRight, Check } from 'lucide-react'
-
-const doctors = [
-  { id: 1, name: 'Dr. Ravi Kumar', spec: 'Cardiologist', exp: '12 Years Experience' },
-  { id: 2, name: 'Dr. Priya Sharma', spec: 'Neurologist', exp: '8 Years Experience' },
-  { id: 3, name: 'Dr. Arjun Mehta', spec: 'Orthopedic', exp: '15 Years Experience' },
-  { id: 4, name: 'Dr. Sneha Patel', spec: 'Pediatrician', exp: '10 Years Experience' },
-]
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Calendar, Clock, User, CheckCircle, ChevronRight, Check, AlertCircle } from 'lucide-react'
+import api from '../../services/api'
 
 const timeSlots = ['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '04:00 PM', '04:30 PM', '05:00 PM']
 
 export default function BookAppointment() {
+  const navigate = useNavigate()
   const [step, setStep] = useState(1)
+  const [doctors, setDoctors] = useState([])
+  const [loadingDoctors, setLoadingDoctors] = useState(true)
   const [selectedDoctor, setSelectedDoctor] = useState(null)
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
+  const [bookingLoading, setBookingLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const handleBook = () => {
-    alert(`Appointment Booked successfully with ${doctors.find(d => d.id === selectedDoctor)?.name} on ${selectedDate} at ${selectedTime}!`)
-    setStep(1); setSelectedDoctor(null); setSelectedDate(''); setSelectedTime('')
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        setLoadingDoctors(true)
+        const res = await api.get('/doctors')
+        setDoctors(res.data.data || [])
+      } catch (err) {
+        console.error('Error fetching doctors:', err)
+        setError('Failed to load doctors. Please try again later.')
+      } finally {
+        setLoadingDoctors(false)
+      }
+    }
+    fetchDoctors()
+  }, [])
+
+  const handleBook = async () => {
+    try {
+      setBookingLoading(true)
+      setError(null)
+      
+      const payload = {
+        doctor: selectedDoctor,
+        date: selectedDate,
+        timeSlot: selectedTime,
+        reason: 'Consultation', // Default reason
+      }
+
+      await api.post('/appointments', payload)
+      
+      setStep(4) // Successful booking step
+      setTimeout(() => {
+        navigate('/patient/dashboard')
+      }, 5000)
+    } catch (err) {
+      console.error('Booking failed:', err)
+      setError(err.response?.data?.message || 'Booking failed. Please check your data.')
+    } finally {
+      setBookingLoading(false)
+    }
+  }
+
+  const selectedDocObj = doctors.find(d => d._id === selectedDoctor)
+
+  if (loadingDoctors) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -29,52 +76,61 @@ export default function BookAppointment() {
         <p className="section-subtitle">Schedule a consultation with our expert doctors</p>
       </div>
 
-      {/* Progress Bar */}
-      <div className="flex items-center justify-between relative mb-8">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-100 -z-10 rounded-full"></div>
-        {[
-          { num: 1, label: 'Select Doctor' },
-          { num: 2, label: 'Choose Date & Slot' },
-          { num: 3, label: 'Confirm Booking' }
-        ].map((s, i) => (
-          <div key={s.num} className="flex items-center gap-3 bg-gray-50 px-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-all duration-300 ${step >= s.num ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
-              {step > s.num ? <Check size={16} /> : s.num}
+      {step < 4 && (
+        <div className="flex items-center justify-between relative mb-8">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-100 -z-10 rounded-full"></div>
+          {[
+            { num: 1, label: 'Select Doctor' },
+            { num: 2, label: 'Choose Date & Slot' },
+            { num: 3, label: 'Confirm Booking' }
+          ].map((s, i) => (
+            <div key={s.num} className="flex items-center gap-3 bg-gray-50 px-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-all duration-300 ${step >= s.num ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+                }`}>
+                {step > s.num ? <Check size={16} /> : s.num}
+              </div>
+              <span className={`text-sm font-semibold hidden md:block ${step >= s.num ? 'text-blue-600' : 'text-gray-400'}`}>
+                {s.label}
+              </span>
             </div>
-            <span className={`text-sm font-semibold hidden md:block ${step >= s.num ? 'text-blue-600' : 'text-gray-400'}`}>
-              {s.label}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-5 py-3 rounded-xl shadow-sm text-sm">
+          <AlertCircle size={18} />
+          {error}
+        </div>
+      )}
 
       <div className="card shadow-sm border border-gray-100 p-6 md:p-8">
-        {/* Step 1: Select Doctor */}
         {step === 1 && (
           <div className="animate-fadeIn">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
               <User className="text-blue-600" /> Select a Specialist
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {doctors.map(d => (
-                <div key={d.id}
-                  onClick={() => setSelectedDoctor(d.id)}
-                  className={`p-5 rounded-2xl cursor-pointer border-2 transition-all duration-200 flex items-center gap-4 ${selectedDoctor === d.id
+              {doctors.length > 0 ? doctors.map(d => (
+                <div key={d._id}
+                  onClick={() => setSelectedDoctor(d._id)}
+                  className={`p-5 rounded-2xl cursor-pointer border-2 transition-all duration-200 flex items-center gap-4 ${selectedDoctor === d._id
                       ? 'border-blue-600 bg-blue-50/50 shadow-md transform scale-[1.02]'
                       : 'border-gray-100 hover:border-blue-300 hover:shadow-sm bg-white'
                     }`}>
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold transition-colors ${selectedDoctor === d.id ? 'bg-blue-600 text-white shadow-inner' : 'bg-blue-100 text-blue-600'
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold transition-colors ${selectedDoctor === d._id ? 'bg-blue-600 text-white shadow-inner' : 'bg-blue-100 text-blue-600'
                     }`}>
-                    {d.name.charAt(4)}
+                    {d.user?.name?.charAt(0) || 'D'}
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900">{d.name}</h3>
-                    <p className="text-sm font-semibold text-blue-600">{d.spec}</p>
-                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Clock size={12} />{d.exp}</p>
+                    <h3 className="font-bold text-gray-900">Dr. {d.user?.name}</h3>
+                    <p className="text-sm font-semibold text-blue-600">{d.specialization}</p>
+                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Clock size={12} />{d.experience} Years Exp.</p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="col-span-2 text-center py-10 text-gray-400">No doctors available for booking.</p>
+              )}
             </div>
             <div className="mt-8 flex justify-end">
               <button
@@ -87,7 +143,6 @@ export default function BookAppointment() {
           </div>
         )}
 
-        {/* Step 2: Date & Time */}
         {step === 2 && (
           <div className="animate-fadeIn">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
@@ -129,7 +184,6 @@ export default function BookAppointment() {
           </div>
         )}
 
-        {/* Step 3: Confirm */}
         {step === 3 && (
           <div className="animate-fadeIn max-w-lg mx-auto">
             <div className="text-center mb-8">
@@ -145,11 +199,11 @@ export default function BookAppointment() {
               <div className="bg-white rounded-xl p-6 relative z-10 border border-white">
                 <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
                   <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner">
-                    {doctors.find(d => d.id === selectedDoctor)?.name.charAt(4)}
+                    {selectedDocObj?.user?.name?.charAt(0) || 'D'}
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900">{doctors.find(d => d.id === selectedDoctor)?.name}</h3>
-                    <p className="text-blue-600 font-medium">{doctors.find(d => d.id === selectedDoctor)?.spec}</p>
+                    <h3 className="font-bold text-lg text-gray-900">Dr. {selectedDocObj?.user?.name}</h3>
+                    <p className="text-blue-600 font-medium">{selectedDocObj?.specialization}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -170,10 +224,31 @@ export default function BookAppointment() {
             </div>
 
             <div className="flex justify-between items-center pt-2">
-              <button onClick={() => setStep(2)} className="btn-secondary px-6">Back</button>
-              <button onClick={handleBook} className="btn-primary flex items-center gap-2 px-8 py-3 text-base shadow-md hover:shadow-lg transition-all animate-pulse-slow">
-                <CheckCircle size={20} /> Confirm Booking
+              <button onClick={() => setStep(2)} className="btn-secondary px-6" disabled={bookingLoading}>Back</button>
+              <button 
+                onClick={handleBook} 
+                disabled={bookingLoading}
+                className="btn-primary flex items-center gap-2 px-8 py-3 text-base shadow-md hover:shadow-lg transition-all animate-pulse-slow disabled:opacity-50">
+                {bookingLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <CheckCircle size={20} />
+                )}
+                {bookingLoading ? 'Processing...' : 'Confirm Booking'}
               </button>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="animate-fadeIn text-center p-12">
+            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle size={48} className="text-emerald-600" />
+            </div>
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Booking Successful!</h2>
+            <p className="text-gray-500 mb-8">Your appointment has been confirmed and stored. You are being redirected to your dashboard.</p>
+            <div className="flex justify-center gap-4">
+              <button onClick={() => navigate('/patient/dashboard')} className="btn-primary px-8">Go to Dashboard Now</button>
             </div>
           </div>
         )}
@@ -181,3 +256,4 @@ export default function BookAppointment() {
     </div>
   )
 }
+
