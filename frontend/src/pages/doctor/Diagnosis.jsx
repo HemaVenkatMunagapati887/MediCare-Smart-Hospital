@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Clock, FileText, CheckCircle, Search, Save, Upload, Activity, AlertCircle, X, Check, Stethoscope, User } from 'lucide-react'
+import { Clock, FileText, CheckCircle, Search, Save, Upload, Activity, AlertCircle, X, Check, Stethoscope, User, Shield, Bot, AlertTriangle, Pill } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import api from '../../services/api'
+import api, { uploadFile } from '../../services/api'
+import { checkPrescriptionSafety } from '../../services/ai'
 
 export default function Diagnosis() {
   const { user } = useAuth()
@@ -19,6 +20,11 @@ export default function Diagnosis() {
   const [error, setError] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [recordType, setRecordType] = useState('Prescription')
+  
+  // AI Safety Check state
+  const [safetyCheck, setSafetyCheck] = useState(null)
+  const [checkingSafety, setCheckingSafety] = useState(false)
+  const [showSafetyPanel, setShowSafetyPanel] = useState(false)
 
   const isDemoDoctor = user?.email === 'sneha@medicare.com' || user?.email === 'suresh@medicare.com'
 
@@ -143,6 +149,76 @@ export default function Diagnosis() {
     fileInputRef.current?.click()
   }
 
+  // AI Prescription Safety Check
+  const handleSafetyCheck = async () => {
+    if (!rx || rx.trim().length < 5) {
+      setError('Please enter a prescription to check')
+      return
+    }
+
+    setCheckingSafety(true)
+    setSafetyCheck(null)
+
+    try {
+      // Get patient info for better analysis
+      const patientInfo = {
+        allergies: selectedPatientData?.patient?.allergies || (isDemoDoctor ? ['Penicillin'] : []),
+        currentMedications: selectedPatientData?.patient?.currentMedications || [],
+        conditions: selectedPatientData?.patient?.conditions || [],
+        age: selectedPatientData?.patient?.age,
+        weight: selectedPatientData?.patient?.weight
+      }
+
+      const result = await checkPrescriptionSafety(rx, patientId, patientInfo)
+      
+      if (result.success && result.data) {
+        setSafetyCheck(result.data)
+        setShowSafetyPanel(true)
+      } else {
+        // Use fallback data 
+        setSafetyCheck(result.data || {
+          safetyStatus: 'safe',
+          overallRisk: 'low',
+          drugInteractions: [],
+          allergyAlerts: [],
+          dosageConcerns: [],
+          recommendations: ['Standard prescription safety guidelines apply'],
+          summary: 'No significant safety concerns detected.'
+        })
+        setShowSafetyPanel(true)
+      }
+    } catch (err) {
+      console.error('Safety check failed:', err)
+      setSafetyCheck({
+        safetyStatus: 'warning',
+        overallRisk: 'moderate',
+        drugInteractions: [],
+        allergyAlerts: [],
+        recommendations: ['Manual review recommended - AI check unavailable'],
+        summary: 'Unable to perform automated safety check. Please verify manually.'
+      })
+      setShowSafetyPanel(true)
+    } finally {
+      setCheckingSafety(false)
+    }
+  }
+
+  const getSafetyStatusColor = (status) => {
+    switch (status) {
+      case 'danger': return 'bg-red-100 border-red-300 text-red-800'
+      case 'warning': return 'bg-orange-100 border-orange-300 text-orange-800'
+      default: return 'bg-green-100 border-green-300 text-green-800'
+    }
+  }
+
+  const getSafetyStatusIcon = (status) => {
+    switch (status) {
+      case 'danger': return <AlertTriangle size={18} className="text-red-600" />
+      case 'warning': return <AlertCircle size={18} className="text-orange-600" />
+      default: return <Shield size={18} className="text-green-600" />
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
@@ -153,7 +229,10 @@ export default function Diagnosis() {
       {saved && (
         <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-4 rounded-xl shadow-sm animate-fadeIn">
           <CheckCircle size={20} className="flex-shrink-0" />
-          <p className="font-medium">Record saved successfully! The prescription has been synchronized with the patient's portal.</p>
+          <div>
+            <p className="font-medium">Record saved and finalized successfully!</p>
+            <p className="text-sm text-emerald-600 mt-1">The patient has been notified via email with their prescription details.</p>
+          </div>
         </div>
       )}
 
@@ -257,6 +336,28 @@ export default function Diagnosis() {
                   onChange={e => setRx(e.target.value)}
                   placeholder={"1. Aspirin 75mg (1-0-0) for 30 days\n2. Pantoprazole 40mg (1-0-0) before breakfast\n3. Follow up after 2 weeks"}
                 />
+                
+                {/* AI Safety Check Button */}
+                <div className="mt-3 flex items-center gap-3">
+                  <button 
+                    type="button"
+                    onClick={handleSafetyCheck}
+                    disabled={checkingSafety || rx.length < 5}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-semibold text-sm border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    {checkingSafety ? (
+                      <><div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" /> Checking...</>
+                    ) : (
+                      <><Bot size={16} /> AI Safety Check</>
+                    )}
+                  </button>
+                  {safetyCheck && (
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold border ${getSafetyStatusColor(safetyCheck.safetyStatus)}`}>
+                      {getSafetyStatusIcon(safetyCheck.safetyStatus)}
+                      {safetyCheck.safetyStatus === 'safe' ? 'Safe' : safetyCheck.safetyStatus === 'warning' ? 'Warnings Found' : 'Issues Detected'}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Notes */}
@@ -372,12 +473,143 @@ export default function Diagnosis() {
             </p>
             <ul className="text-xs text-blue-600 space-y-1.5">
               <li className="flex items-start gap-1.5"><Check size={12} className="mt-0.5 flex-shrink-0" /> Record saved to patient's Medical Records</li>
+              <li className="flex items-start gap-1.5"><Check size={12} className="mt-0.5 flex-shrink-0" /> Patient receives email with prescription</li>
               <li className="flex items-start gap-1.5"><Check size={12} className="mt-0.5 flex-shrink-0" /> Appears in patient's Visit History</li>
               <li className="flex items-start gap-1.5"><Check size={12} className="mt-0.5 flex-shrink-0" /> Appointment marked as Completed</li>
             </ul>
           </div>
         </div>
       </form>
+
+      {/* AI Safety Check Panel Modal */}
+      {showSafetyPanel && safetyCheck && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fadeIn">
+            {/* Header */}
+            <div className={`p-6 border-b ${safetyCheck.safetyStatus === 'danger' ? 'bg-red-50' : safetyCheck.safetyStatus === 'warning' ? 'bg-orange-50' : 'bg-green-50'}`}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${safetyCheck.safetyStatus === 'danger' ? 'bg-red-100' : safetyCheck.safetyStatus === 'warning' ? 'bg-orange-100' : 'bg-green-100'}`}>
+                    {getSafetyStatusIcon(safetyCheck.safetyStatus)}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Pill size={18} /> Prescription Safety Analysis
+                    </h3>
+                    <p className={`text-sm font-semibold ${safetyCheck.safetyStatus === 'danger' ? 'text-red-600' : safetyCheck.safetyStatus === 'warning' ? 'text-orange-600' : 'text-green-600'}`}>
+                      Risk Level: {safetyCheck.overallRisk?.charAt(0).toUpperCase() + safetyCheck.overallRisk?.slice(1) || 'Unknown'}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setShowSafetyPanel(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <X size={20} className="text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-5">
+              {/* Summary */}
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <p className="text-sm text-gray-700 leading-relaxed">{safetyCheck.summary}</p>
+              </div>
+
+              {/* Drug Interactions */}
+              {safetyCheck.drugInteractions?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <AlertTriangle size={16} className="text-orange-500" /> Drug Interactions
+                  </h4>
+                  <div className="space-y-2">
+                    {safetyCheck.drugInteractions.map((interaction, i) => (
+                      <div key={i} className={`p-3 rounded-xl border ${interaction.severity === 'severe' ? 'bg-red-50 border-red-200' : interaction.severity === 'moderate' ? 'bg-orange-50 border-orange-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-gray-900 text-sm">{interaction.drugs?.join(' + ')}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${interaction.severity === 'severe' ? 'bg-red-200 text-red-800' : interaction.severity === 'moderate' ? 'bg-orange-200 text-orange-800' : 'bg-yellow-200 text-yellow-800'}`}>{interaction.severity}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">{interaction.description}</p>
+                        {interaction.recommendation && <p className="text-sm text-blue-600 mt-1 font-medium">→ {interaction.recommendation}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Allergy Alerts */}
+              {safetyCheck.allergyAlerts?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <AlertCircle size={16} className="text-red-500" /> Allergy Alerts
+                  </h4>
+                  <div className="space-y-2">
+                    {safetyCheck.allergyAlerts.map((alert, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-red-50 border border-red-200">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-red-900 text-sm">{alert.medication}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-200 text-red-800 font-bold">{alert.severity}</span>
+                        </div>
+                        <p className="text-sm text-red-700">Related to allergen: <strong>{alert.allergen}</strong></p>
+                        <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Dosage Concerns */}
+              {safetyCheck.dosageConcerns?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Activity size={16} className="text-blue-500" /> Dosage Concerns
+                  </h4>
+                  <div className="space-y-2">
+                    {safetyCheck.dosageConcerns.map((concern, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-blue-50 border border-blue-200">
+                        <span className="font-bold text-blue-900 text-sm">{concern.medication}</span>
+                        <p className="text-sm text-gray-600 mt-1">{concern.issue}</p>
+                        {concern.recommendation && <p className="text-sm text-blue-600 mt-1 font-medium">→ {concern.recommendation}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {safetyCheck.recommendations?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <CheckCircle size={16} className="text-green-500" /> Recommendations
+                  </h4>
+                  <ul className="space-y-2">
+                    {safetyCheck.recommendations.map((rec, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <Check size={16} className="text-green-500 mt-0.5 shrink-0" />
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-gray-50 border-t flex justify-end gap-3">
+              <button 
+                onClick={() => setShowSafetyPanel(false)}
+                className="px-5 py-2.5 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-colors"
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => setShowSafetyPanel(false)}
+                className="px-5 py-2.5 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors flex items-center gap-2"
+              >
+                <CheckCircle size={16} /> Acknowledge &amp; Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

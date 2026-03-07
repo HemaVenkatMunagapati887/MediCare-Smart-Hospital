@@ -66,4 +66,25 @@ api.interceptors.response.use(
   }
 );
 
+// Upload file to Cloudinary via backend
+export const uploadFile = async (file, uploadType = 'report') => {
+  const formData = new FormData();
+  // Profile uploads expect 'image' key, others expect 'file'
+  const fieldKey = uploadType === 'profile' ? 'image' : 'file';
+  formData.append(fieldKey, file);
+  
+  const response = await axios.post(
+    `${import.meta.env.VITE_API_URL || '/api/v1'}/uploads/${uploadType}`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${JSON.parse(localStorage.getItem('sh_user') || '{}').token}`
+      }
+    }
+  );
+  
+  return response.data.data;
+};
+
 export default api;

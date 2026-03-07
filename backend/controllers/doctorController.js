@@ -60,11 +60,19 @@ exports.createDoctor = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/doctors/me
 // @access  Private/Doctor
 exports.getMyProfile = asyncHandler(async (req, res, next) => {
-  const doctor = await Doctor.findOne({ user: req.user.id }).populate('user', 'name email');
+  let doctor = await Doctor.findOne({ user: req.user.id }).populate('user', 'name email');
 
+  // Auto-create doctor profile if not found (for newly registered doctors)
   if (!doctor) {
-    res.status(404);
-    throw new Error('Doctor profile not found for this user');
+    doctor = await Doctor.create({
+      user: req.user.id,
+      specialization: 'General',
+      experience: 0,
+      fees: 0,
+      about: '',
+      image: ''
+    });
+    doctor = await Doctor.findById(doctor._id).populate('user', 'name email');
   }
 
   res.status(200).json({

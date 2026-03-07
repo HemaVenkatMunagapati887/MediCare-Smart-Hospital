@@ -23,6 +23,7 @@ const doctorLinks = [
   { to: '/doctor/patients', label: 'My Patients', icon: Users },
   { to: '/doctor/diagnosis', label: 'Add Diagnosis', icon: Stethoscope },
   { to: '/doctor/schedule', label: 'My Schedule', icon: Clock },
+  { to: '/doctor/profile', label: 'My Profile', icon: User },
 ]
 
 const adminLinks = [
@@ -123,12 +124,17 @@ export default function Sidebar({ mobileOpen, onClose }) {
           )
         })}
 
-        <div className="my-3 border-t border-gray-100" />
-        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider px-3 mb-2">AI Tools</p>
-        <NavLink to="/ai/report-summary" onClick={onClose}
-          className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${isActive ? ac.active : `text-gray-600 ${ac.hover}`}`}>
-          {({ isActive }) => (<><FileText size={17} className={isActive ? ac.icon : 'text-gray-400'} /><span>AI Report Summary</span></>)}
-        </NavLink>
+        {/* AI Tools section - hidden for doctors who have in-dashboard AI features */}
+        {role !== 'doctor' && (
+          <>
+            <div className="my-3 border-t border-gray-100" />
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider px-3 mb-2">AI Tools</p>
+            <NavLink to="/ai/report-summary" onClick={onClose}
+              className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${isActive ? ac.active : `text-gray-600 ${ac.hover}`}`}>
+              {({ isActive }) => (<><FileText size={17} className={isActive ? ac.icon : 'text-gray-400'} /><span>AI Report Summary</span></>)}
+            </NavLink>
+          </>
+        )}
       </nav>
 
       {/* Logout */}

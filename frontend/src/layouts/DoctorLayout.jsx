@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
+import DoctorChatbot from '../components/DoctorChatbot'
 import { Bell, Search, Menu, Activity } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -10,6 +11,7 @@ const pageTitles = {
   '/doctor/patients': 'My Patients',
   '/doctor/diagnosis': 'Add Diagnosis',
   '/doctor/schedule': 'My Schedule',
+  '/doctor/profile': 'My Profile',
 }
 
 export default function DoctorLayout() {
@@ -58,6 +60,9 @@ export default function DoctorLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Doctor AI Assistant Chatbot */}
+      <DoctorChatbot />
     </div>
   )
 }
