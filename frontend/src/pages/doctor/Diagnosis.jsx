@@ -10,7 +10,7 @@ export default function Diagnosis() {
   const location = useLocation()
   const fileInputRef = useRef(null)
   const [appointments, setAppointments] = useState([])
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState(location.state?.selectedAppointmentId || '')
+  const [selectedApptId, setSelectedApptId] = useState(location.state?.selectedAppointmentId || '')
   const [diag, setDiag] = useState('')
   const [rx, setRx] = useState('')
   const [notes, setNotes] = useState('')
@@ -37,13 +37,10 @@ export default function Diagnosis() {
         if (user?._id || user?.id) {
           try {
             const profRes = await api.get('/doctors/me')
-            const apptRes = await api.get(`/appointments/doctor/${profRes.data.data._id}`)
-            // Get only ACTIVE appointments (not completed, cancelled, resolved, no-show)
-            const activeStatuses = ['pending', 'confirmed', 'in-progress', 'upcoming']
-            realAppts = (apptRes.data.data || []).filter(a => {
-              const status = (a.status || '').toLowerCase()
-              return activeStatuses.includes(status)
+            const apptRes = await api.get(`/appointments/doctor/${profRes.data.data._id}`, {
+              params: { status: 'in-progress' }
             })
+            realAppts = (apptRes.data.data || [])
           } catch (e) {
             console.error("Fetch real appts error:", e)
           }
@@ -56,8 +53,6 @@ export default function Diagnosis() {
         ] : []
 
         const allAvailable = [...demoAppts, ...realAppts]
-
-        // Show each appointment separately (not deduplicated by patient) for accurate selection
         setAppointments(allAvailable)
       } catch (err) {
         console.error("Diagnosis patient fetch error:", err)
@@ -72,21 +67,22 @@ export default function Diagnosis() {
   const handleSave = async (e) => {
     e.preventDefault()
 
-    if (!selectedAppointmentId) {
+    if (!selectedApptId) {
       setError("Please select an appointment first.")
       return
     }
 
-    // Demo appointments start with 'd'
-    const isDemoAppointment = String(selectedAppointmentId).startsWith('d')
+    const selectedAppt = appointments.find(a => a._id === selectedApptId)
+    const isDemoAppt = String(selectedApptId).startsWith('d')
+    const patientId = selectedAppt?.patient?._id || selectedAppt?.patient?.id || selectedAppt?.patient
 
-    if (isDemoAppointment) {
+    if (isDemoAppt) {
       setIsSaving(true)
-      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1200))
       setIsSaving(false)
+      setAppointments(prev => prev.filter(a => a._id !== selectedApptId))
       setSaved(true)
-      setSelectedAppointmentId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
+      setSelectedApptId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
       setTimeout(() => setSaved(false), 5000)
       return
     }
@@ -94,38 +90,22 @@ export default function Diagnosis() {
     try {
       setIsSaving(true)
 
-      // Find the appointment by its _id
-      const appointment = appointments.find(a => a._id === selectedAppointmentId)
-
-      if (!appointment) {
-        setError("Selected appointment not found.")
-        return
-      }
-
-      const patientId = appointment.patient?._id || appointment.patient?.id || appointment.patient
-
       const payload = {
         patient: patientId,
+        appointment: selectedApptId,
         title: diag,
         description: rx + (notes ? `\n\nDoctor Notes: ${notes}` : ''),
         recordType: selectedFile ? 'Lab Report' : recordType
       }
 
-      // Create the visit/medical record with standard JSON
-      const visitRes = await api.post('/visits', payload)
+      // Create visit — backend auto-marks appointment as completed
+      await api.post('/visits', payload)
 
-      // Mark appointment as RESOLVED (diagnosis completed)
-      try {
-        await api.put(`/appointments/${appointment._id}`, { 
-          status: 'resolved',
-          diagnosisId: visitRes.data?.data?._id 
-        })
-      } catch (apptErr) {
-        console.warn("Could not update appointment status:", apptErr.message)
-      }
+      // Remove the completed appointment from the dropdown
+      setAppointments(prev => prev.filter(a => a._id !== selectedApptId))
 
       setSaved(true)
-      setSelectedAppointmentId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
+      setSelectedApptId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
 
       setTimeout(() => setSaved(false), 6000)
     } catch (err) {
@@ -137,8 +117,7 @@ export default function Diagnosis() {
     }
   }
 
-  // Find selected appointment by its _id
-  const selectedPatientData = appointments.find(a => a._id === selectedAppointmentId)
+  const selectedPatientData = appointments.find(a => a._id === selectedApptId)
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -171,8 +150,8 @@ export default function Diagnosis() {
         weight: selectedPatientData?.patient?.weight
       }
 
-      const patientId = selectedPatientData?.patient?._id || selectedPatientData?.patient?.id || selectedPatientData?.patient
-      const result = await checkPrescriptionSafety(rx, patientId, patientInfo)
+      const pId = selectedPatientData?.patient?._id || selectedPatientData?.patient?.id || ''
+      const result = await checkPrescriptionSafety(rx, pId, patientInfo)
       
       if (result.success && result.data) {
         setSafetyCheck(result.data)
@@ -250,41 +229,39 @@ export default function Diagnosis() {
               {/* Appointment Selector */}
               <div className="form-group">
                 <label className="form-label text-xs font-bold uppercase text-gray-500 tracking-wider flex items-center gap-1.5">
-                  <Hash size={14} className="text-blue-500" /> Select Appointment *
+                  <User size={14} className="text-blue-500" /> Select Active Consultation *
                 </label>
                 {loadingPatients ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500 py-3">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-600"></div>
-                    Loading appointments...
+                    Loading in-progress appointments...
                   </div>
                 ) : (
                   <select
                     required={!isDemoDoctor}
                     className="form-input focus:ring-teal-500 focus:border-teal-500 bg-gray-50 focus:bg-white"
-                    value={selectedAppointmentId}
-                    onChange={e => setSelectedAppointmentId(e.target.value)}
+                    value={selectedApptId}
+                    onChange={e => setSelectedApptId(e.target.value)}
                   >
                     <option value="">-- Choose Appointment --</option>
                     {appointments.map(a => {
-                      // Resolve patient name
                       let pName = 'Unknown Patient';
                       if (a.patient) {
                         if (typeof a.patient === 'string') pName = 'Patient';
                         else if (a.patient.name) pName = a.patient.name;
                         else if (a.patient.user && a.patient.user.name) pName = a.patient.user.name;
                       }
-                      
-                      // Display format: AppointmentID — PatientName — TimeSlot
-                      const apptIdDisplay = a.appointmentId || `APT-${a._id.substring(0,6)}`;
-                      
+                      const time = a.timeSlot || (a.date ? new Date(a.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+                      const symptoms = a.reason || '';
+
                       return (
                         <option key={a._id} value={a._id}>
-                          {apptIdDisplay} — {pName} — {a.timeSlot || new Date(a.date).toLocaleDateString()}
+                          {pName} • {time}{symptoms ? ` • ${symptoms}` : ''}
                         </option>
                       )
                     })}
                     {appointments.length === 0 && !loadingPatients && (
-                      <option disabled>No active appointments found</option>
+                      <option disabled>No in-progress consultations — click Start on an appointment first</option>
                     )}
                   </select>
                 )}
@@ -398,7 +375,7 @@ export default function Diagnosis() {
             <h3 className="font-bold text-gray-900 border-b border-teal-100 pb-3 mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
               <Stethoscope size={16} className="text-teal-600" /> Reference Area
             </h3>
-            {!selectedAppointmentId ? (
+            {!selectedApptId ? (
               <div className="text-center py-6">
                 <Search size={32} className="mx-auto text-teal-200 mb-2" />
                 <p className="text-sm text-gray-500 font-medium">Select an appointment to load details here.</p>

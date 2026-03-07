@@ -1,6 +1,7 @@
 const Visit = require('../models/Visit');
 const Doctor = require('../models/Doctor');
 const User = require('../models/User');
+const Appointment = require('../models/Appointment');
 const asyncHandler = require('express-async-handler');
 const sendEmail = require('../utils/sendEmail');
 const { diagnosisComplete } = require('../utils/emailTemplates');
@@ -54,6 +55,15 @@ exports.createVisit = asyncHandler(async (req, res, next) => {
   req.body.doctor = doctorProfile._id;
 
   const visit = await Visit.create(req.body);
+
+  // Auto-mark the linked appointment as completed
+  if (req.body.appointment) {
+    try {
+      await Appointment.findByIdAndUpdate(req.body.appointment, { status: 'completed' });
+    } catch (apptErr) {
+      console.warn('Could not update appointment status:', apptErr.message);
+    }
+  }
 
   // Populate before returning so the response is useful
   const populatedVisit = await Visit.findById(visit._id)

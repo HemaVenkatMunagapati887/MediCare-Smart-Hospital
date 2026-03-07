@@ -25,9 +25,7 @@ export const getSmartRecommendation = async (symptoms, preferredDate, specializa
 };
 
 export const summarizeReport = async (formData) => {
-  const response = await api.post(`${AI_BASE}/report/summarize`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+  const response = await api.post(`${AI_BASE}/report/summarize`, formData);
   return response.data;
 };
 
