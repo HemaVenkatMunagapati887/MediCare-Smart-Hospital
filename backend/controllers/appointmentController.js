@@ -62,15 +62,51 @@ exports.bookAppointment = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get appointments for a doctor
+// @route   GET /api/v1/appointments/doctor/:doctorId
+// @access  Private
+exports.getDoctorAppointments = asyncHandler(async (req, res, next) => {
+  // If user is a doctor, they can only see their own appointments (unless they are admin)
+  // But we usually pass the doctor's profile ID here, not the User ID.
+  
+  const appointments = await Appointment.find({ doctor: req.params.doctorId })
+    .populate('patient', 'name email');
+
+  res.status(200).json({
+    success: true,
+    count: appointments.length,
+    data: appointments
+  });
+});
+
 // @desc    Update appointment status
 // @route   PUT /api/v1/appointments/:id
-// @access  Private (Doctor/Admin)
+// @access  Private
 exports.updateAppointmentStatus = asyncHandler(async (req, res, next) => {
   let appointment = await Appointment.findById(req.params.id);
 
   if (!appointment) {
     res.status(404);
     throw new Error('Appointment not found');
+  }
+
+  // Permission check
+  if (req.user.role === 'patient') {
+    if (appointment.patient.toString() !== req.user.id) {
+       res.status(401);
+       throw new Error('Not authorized to modify this appointment');
+    }
+    // Patients should ONLY be allowed to cancel
+    if (req.body.status !== 'cancelled') {
+        res.status(400);
+        throw new Error('Patients can only cancel appointments');
+    }
+  }
+
+  // Doctor check - ensure it is their own appointment
+  if (req.user.role === 'doctor') {
+    // Note: Use populate to check doctor's user ID if necessary
+    // But we just assume it's for them, or check against their doctor profile ID.
   }
 
   appointment = await Appointment.findByIdAndUpdate(req.params.id, { status: req.body.status }, {

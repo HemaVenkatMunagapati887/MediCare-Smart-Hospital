@@ -1,24 +1,123 @@
-import React, { useState } from 'react'
-import { Calendar, Clock, Video, FileText, Activity, Users, CheckCircle, Phone, Mail, MapPin } from 'lucide-react'
-
-// Dummy patient database for doctor
-const patients = [
-  {
-    id: 1, name: 'Venkat R.', age: 28, gender: 'Male', bloodGroup: 'B+', phone: '+91 98765 43210', email: 'venkat@gmail.com', address: 'Hyderabad, TG', visits: [
-      { date: '15 Feb 2026', diag: 'Routine Checkup', rx: 'Vitamin D3' },
-      { date: '10 Jan 2026', diag: 'Mild Hypertension', rx: 'Rest, track BP' }
-    ]
-  },
-  {
-    id: 2, name: 'Rahul K.', age: 34, gender: 'Male', bloodGroup: 'O+', phone: '+91 88888 77777', email: 'rahul@gmail.com', address: 'Secunderabad, TG', visits: [
-      { date: '05 Mar 2026', diag: 'Chest Pain', rx: 'ECG done, normal. Suggested antacids.' }
-    ]
-  },
-  { id: 3, name: 'Anitha S.', age: 42, gender: 'Female', bloodGroup: 'A-', phone: '+91 77777 66666', email: 'anitha@gmail.com', address: 'Cyberabad, TG', visits: [] },
-]
+import React, { useState, useEffect, useRef } from 'react'
+import { Calendar, Clock, Video, FileText, Activity, Users, CheckCircle, Phone, Mail, MapPin, HeartPulse } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import api from '../../services/api'
 
 export default function PatientDetails() {
-  const [selected, setSelected] = useState(patients[0])
+  const { user } = useAuth()
+  const [patients, setPatients] = useState([])
+  const [selected, setSelected] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const isDemoDoctor = user?.email === 'sneha@medicare.com' || user?.email === 'suresh@medicare.com'
+
+  useEffect(() => {
+    const fetchMyPatients = async () => {
+      let finalPatients = []
+      
+      try {
+        setLoading(true)
+        const profRes = await api.get('/doctors/me')
+        const docId = profRes.data.data._id
+        
+        // Fetch all appointments for this doctor to find all patients
+        const apptRes = await api.get(`/appointments/doctor/${docId}`)
+        const appts = apptRes.data.data || []
+        
+        // Extract unique patients with basic details
+        const patientMap = {}
+        appts.forEach(a => {
+           if (a.patient && !patientMap[a.patient._id]) {
+             patientMap[a.patient._id] = {
+               id: a.patient._id,
+               name: a.patient.name,
+               email: a.patient.email,
+               age: 26, // Default or fetch from profile if stored
+               gender: 'Not Specified',
+               bloodGroup: 'Unknown',
+               phone: 'Not provided',
+               address: 'Not provided',
+               visits: appts.filter(vis => vis.patient?._id === a.patient._id && vis.status === 'completed').map(v => ({
+                 date: new Date(v.date).toLocaleDateString(),
+                 diag: v.reason,
+                 rx: 'See visit records'
+               }))
+             }
+           }
+        })
+        finalPatients = Object.values(patientMap)
+      } catch (err) {
+        console.error("Error fetching patients:", err)
+      }
+
+      if (isDemoDoctor) {
+        const demoPatients = [
+          {
+            id: 'demo1', name: 'Venkat R.', age: 28, gender: 'Male', bloodGroup: 'B+', phone: '+91 98765 43210', email: 'venkat@gmail.com', address: 'Hyderabad, TG', visits: [
+              { date: '15 Feb 2026', diag: 'Routine Checkup', rx: 'Vitamin D3' },
+              { date: '10 Jan 2026', diag: 'Mild Hypertension', rx: 'Rest, track BP' }
+            ]
+          },
+          {
+            id: 'demo2', name: 'Rahul K.', age: 34, gender: 'Male', bloodGroup: 'O+', phone: '+91 88888 77777', email: 'rahul@gmail.com', address: 'Secunderabad, TG', visits: [
+              { date: '05 Mar 2026', diag: 'Chest Pain', rx: 'ECG done, normal. Suggested antacids.' }
+            ]
+          },
+          { id: 'demo3', name: 'Anitha S.', age: 42, gender: 'Female', bloodGroup: 'A-', phone: '+91 77777 66666', email: 'anitha@gmail.com', address: 'Cyberabad, TG', visits: [] },
+        ]
+        setPatients([...demoPatients, ...finalPatients])
+        setSelected(demoPatients[0])
+      } else {
+        setPatients(finalPatients)
+        if (finalPatients.length > 0) setSelected(finalPatients[0])
+      }
+      setLoading(false)
+    }
+
+    if (user) fetchMyPatients()
+  }, [user, isDemoDoctor])
+
+  const filteredPatients = patients.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const fetchedIds = useRef(new Set())
+
+  useEffect(() => {
+    const fetchPatientProfile = async () => {
+      if (selected && !String(selected.id).startsWith('demo') && !fetchedIds.current.has(selected.id)) {
+        try {
+          const res = await api.get('/patients')
+          const realPatient = res.data.data.find(p => p.user?._id === selected.id)
+          if (realPatient) {
+            fetchedIds.current.add(selected.id)
+            setSelected(prev => ({
+              ...prev,
+              age: realPatient.dateOfBirth ? Math.floor((new Date() - new Date(realPatient.dateOfBirth)) / 31557600000) : 26,
+              gender: realPatient.gender || 'Not Specified',
+              bloodGroup: realPatient.bloodGroup || 'Unknown',
+              phone: realPatient.phone || 'Not provided',
+              address: realPatient.address || 'Not provided'
+            }))
+          }
+        } catch (e) {
+          console.error("Error fetching full patient profile:", e)
+        }
+      }
+    }
+
+    if (selected) fetchPatientProfile()
+  }, [selected?.id])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-120px)] animate-fadeIn">
@@ -27,23 +126,34 @@ export default function PatientDetails() {
         <div className="p-4 border-b border-gray-100 bg-gray-50/80 z-10 sticky top-0">
           <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm uppercase tracking-wider"><Users size={16} className="text-teal-600" /> My Patients</h2>
           <div className="relative">
-            <input type="text" placeholder="Search patients..." className="w-full text-sm pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-teal-500 focus:border-teal-500 shadow-inner" />
+            <input 
+              type="text" 
+              placeholder="Search patients..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full text-sm pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-teal-500 focus:border-teal-500 shadow-inner" 
+            />
             <Activity size={14} className="absolute left-3 top-2.5 text-gray-400" />
           </div>
         </div>
         <div className="overflow-y-auto flex-1 divide-y divide-gray-50">
-          {patients.map(p => (
+          {filteredPatients.map(p => (
             <div key={p.id} onClick={() => setSelected(p)}
-              className={`p-4 cursor-pointer transition-colors flex items-center gap-3 ${selected.id === p.id ? 'bg-teal-50 border-l-4 border-l-teal-500' : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${selected.id === p.id ? 'bg-teal-200 text-teal-800' : 'bg-gray-100 text-gray-600'}`}>
-                {p.name.charAt(0)}
+              className={`p-4 cursor-pointer transition-colors flex items-center gap-3 ${selected?.id === p.id ? 'bg-teal-50 border-l-4 border-l-teal-500' : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${selected?.id === p.id ? 'bg-teal-200 text-teal-800' : 'bg-gray-100 text-gray-600'}`}>
+                {p.name?.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-bold truncate ${selected.id === p.id ? 'text-teal-900' : 'text-gray-900'}`}>{p.name}</p>
+                <p className={`text-sm font-bold truncate ${selected?.id === p.id ? 'text-teal-900' : 'text-gray-900'}`}>{p.name}</p>
                 <p className="text-xs text-gray-500 truncate">{p.age} yrs · {p.gender}</p>
               </div>
             </div>
           ))}
+          {filteredPatients.length === 0 && (
+            <div className="p-8 text-center text-gray-400 text-sm italic">
+              No patients found.
+            </div>
+          )}
         </div>
       </div>
 

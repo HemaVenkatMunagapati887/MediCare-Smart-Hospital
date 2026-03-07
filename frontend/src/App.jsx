@@ -1,3 +1,4 @@
+// Smart Hospital Management System - Main Entry Point
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'

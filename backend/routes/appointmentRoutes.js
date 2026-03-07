@@ -2,6 +2,7 @@ const express = require('express');
 const {
   getAppointments,
   getPatientAppointments,
+  getDoctorAppointments,
   bookAppointment,
   updateAppointmentStatus
 } = require('../controllers/appointmentController');
@@ -18,8 +19,9 @@ router
   .get(authorize('admin'), getAppointments)
   .post(authorize('patient'), bookAppointment);
 
-router.get('/patient/:patientId', getPatientAppointments);
+router.get('/patient/:patientId', authorize('patient', 'doctor', 'admin'), getPatientAppointments);
+router.get('/doctor/:doctorId', authorize('doctor', 'admin'), getDoctorAppointments);
 
-router.put('/:id', authorize('doctor', 'admin'), updateAppointmentStatus);
+router.put('/:id', authorize('patient', 'doctor', 'admin'), updateAppointmentStatus);
 
 module.exports = router;

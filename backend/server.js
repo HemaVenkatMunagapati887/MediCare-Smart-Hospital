@@ -56,16 +56,34 @@ const server = app.listen(PORT, () => {
 // Handle port already in use
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.log(`\n⚠️  Port ${PORT} is already in use. Killing existing process...`);
+    console.log(`\n⚠️  Port ${PORT} is already in use. Attempting to free it...`);
     const { execSync } = require('child_process');
+    const isWin = process.platform === 'win32';
+    
     try {
-      execSync(`fuser -k ${PORT}/tcp`, { stdio: 'ignore' });
+      if (isWin) {
+        // Find PID manually on Windows
+        const output = execSync(`netstat -ano | findstr :${PORT}`).toString();
+        const lines = output.split('\n');
+        const listeningLine = lines.find(line => line.includes('LISTENING'));
+        if (listeningLine) {
+          const parts = listeningLine.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && pid !== '0') {
+            console.log(`Found process ${pid} using port ${PORT}. Killing...`);
+            execSync(`taskkill /F /PID ${pid}`);
+          }
+        }
+      } else {
+        execSync(`fuser -k ${PORT}/tcp`, { stdio: 'ignore' });
+      }
+      
       console.log(`✅ Port ${PORT} freed. Restarting...\n`);
       setTimeout(() => {
         server.listen(PORT);
-      }, 1000);
+      }, 1500);
     } catch (e) {
-      console.error(`❌ Could not free port ${PORT}. Please manually kill the process using: fuser -k ${PORT}/tcp`);
+      console.error(`❌ Could not free port ${PORT}. Please manually kill the process.`);
       process.exit(1);
     }
   } else {

@@ -117,6 +117,34 @@ exports.registerVerifyOtp = asyncHandler(async (req, res) => {
   if (pending.role === 'doctor') {
     const adminDoc = await AdminDoctor.findOne({ email: pending.email });
     if (adminDoc) department = adminDoc.department;
+  if (user) {
+    // Create actual profile record in Patient / Doctor collection
+    if (user.role === 'patient') {
+      await Patient.create({
+        user: user._id,
+        gender: 'Male', // Default or from req.body
+        bloodGroup: 'O+'
+      });
+    } else if (user.role === 'doctor') {
+      await Doctor.create({
+        user: user._id,
+        specialization: 'General',
+        experience: 0,
+        fees: 0
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } else {
+    res.status(400);
+    throw new Error('Invalid user data');
   }
 
   const user = await User.create({
@@ -215,6 +243,30 @@ exports.googleAuth = async (req, res) => {
         await user.save();
       } else {
         return res.status(200).json({ success: true, needs_registration: true, email, name });
+        // Create new user via Google
+        user = await User.create({
+          name,
+          email,
+          googleId,
+          authProvider: ['google'],
+          role: role || 'patient',
+        });
+
+        // Create actual profile record in Patient / Doctor collection
+        if (user.role === 'patient') {
+          await Patient.create({
+            user: user._id,
+            gender: 'Male',
+            bloodGroup: 'O+'
+          });
+        } else if (user.role === 'doctor') {
+          await Doctor.create({
+            user: user._id,
+            specialization: 'General',
+            experience: 0,
+            fees: 0
+          });
+        }
       }
     }
 
@@ -292,6 +344,23 @@ exports.googleRegister = async (req, res) => {
       success: true, _id: user._id, name: user.name, email: user.email,
       role: user.role, token: generateToken(user._id),
     });
+    // Create actual profile record in Patient / Doctor collection
+    if (user.role === 'patient') {
+      await Patient.create({
+        user: user._id,
+        gender: 'Male',
+        bloodGroup: 'O+'
+      });
+    } else if (user.role === 'doctor') {
+      await Doctor.create({
+        user: user._id,
+        specialization: 'General',
+        experience: 0,
+        fees: 0
+      });
+    }
+
+    res.status(201).json({ success: true, message: 'Registration successful! Please login with your email and password.' });
   } catch (err) {
     console.error('GoogleRegister Error:', err.message);
     res.status(500).json({ success: false, message: err.message || 'Registration failed' });

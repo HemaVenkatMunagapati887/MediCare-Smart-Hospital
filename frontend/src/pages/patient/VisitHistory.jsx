@@ -1,14 +1,28 @@
 import React, { useState, useEffect } from 'react'
 import { Calendar, Clock, Stethoscope, FileText, Download, Activity, HeartPulse } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 import { showError } from '../../utils/toast'
 
 export default function VisitHistory() {
+  const { user } = useAuth()
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchHistory = async () => {
+      // Demo Data for John Doe
+      if (user?.email === 'john@example.com') {
+        setHistory([
+          { _id: 'h1', createdAt: '2026-02-15T10:30:00Z', doctor: { name: 'Priya Sharma' }, title: 'Migraine tracking', description: 'Migraine frequency has decreased.' },
+          { _id: 'h2', createdAt: '2026-01-02T11:00:00Z', doctor: { name: 'Ravi Kumar' }, title: 'Routine Checkup', description: 'Stable vitals, slightly elevated blood pressure.' },
+          { _id: 'h3', createdAt: '2025-11-10T16:15:00Z', doctor: { name: 'Sneha Patel' }, title: 'Viral Fever', description: 'Recovered from mild seasonal fever.' },
+          { _id: 'h4', createdAt: '2025-08-22T09:45:00Z', doctor: { name: 'Arjun Mehta' }, title: 'Knee Pain (Right)', description: 'Recommended physiotherapy 2x per week.' },
+        ])
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
         const res = await api.get('/visits')
@@ -21,7 +35,7 @@ export default function VisitHistory() {
     }
 
     fetchHistory()
-  }, [])
+  }, [user])
 
   if (loading) {
     return (
@@ -58,7 +72,6 @@ export default function VisitHistory() {
                   <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center border-4 border-white shadow-sm flex-shrink-0">
                     <Activity size={12} />
                   </div>
-                  {/* Mobile view date */}
                   <div className="md:hidden flex-1">
                     <p className="font-bold text-gray-900 text-sm flex items-center gap-2">
                       <Calendar size={14} className="text-blue-500" /> {new Date(v.createdAt).toLocaleDateString()} <span className="text-xs text-gray-400 font-normal">at {new Date(v.createdAt).toLocaleTimeString()}</span>
@@ -67,7 +80,6 @@ export default function VisitHistory() {
                 </div>
 
                 <div className="flex-1 card p-5 hover:border-blue-200 transition-colors shadow-sm ml-10 md:ml-0 group border border-gray-100 relative">
-                  {/* Triangle pointer */}
                   <div className="absolute top-5 -left-2 w-4 h-4 bg-white border-l border-b border-gray-100 rotate-45 hidden md:block group-hover:border-blue-200 transition-colors"></div>
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-4 pb-4 border-b border-gray-50 mb-4">
                     <div className="flex items-center gap-3">
@@ -120,4 +132,5 @@ export default function VisitHistory() {
     </div>
   )
 }
+
 

@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "fuser -k 3000/tcp 2>/dev/null || true",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

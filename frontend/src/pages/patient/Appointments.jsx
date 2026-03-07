@@ -10,12 +10,67 @@ export default function Appointments() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('All')
 
+  const handleCancel = async (id) => {
+    // Check if it's a demo item
+    if (id.startsWith('demo') || id.startsWith('d')) {
+      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: 'cancelled' } : a))
+      return
+    }
+
+    try {
+      await api.put(`/appointments/${id}`, { status: 'cancelled' })
+      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: 'cancelled' } : a))
+    } catch (err) {
+      console.error('Cancellation failed:', err)
+    }
+  }
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         setLoading(true)
-        const res = await api.get(`/appointments/patient/${user._id || user.id}`)
-        setAppointments(res.data.data || [])
+        
+        let realAppts = []
+        if (user?._id || user?.id) {
+          const res = await api.get(`/appointments/patient/${user._id || user.id}`)
+          realAppts = res.data.data || []
+        }
+
+        // Combine with Demo Data for John Doe
+        if (user?.email === 'john@example.com') {
+          const demoAppts = [
+            { 
+              _id: 'd1',
+              doctor: { user: { name: 'Ravi Kumar' }, specialization: 'Cardiologist' }, 
+              date: '2026-03-12', 
+              timeSlot: '10:30 AM', 
+              status: 'confirmed', 
+              type: 'Consultation',
+              reason: 'Routine Checkup'
+            },
+            { 
+              _id: 'd2',
+              doctor: { user: { name: 'Priya Sharma' }, specialization: 'Neurologist' }, 
+              date: '2026-03-15', 
+              timeSlot: '02:00 PM', 
+              status: 'pending', 
+              type: 'Online Call',
+              reason: 'Migraine tracking'
+            },
+            { 
+              _id: 'd3',
+              doctor: { user: { name: 'Arjun Mehta' }, specialization: 'Orthopedic' }, 
+              date: '2026-02-28', 
+              timeSlot: '11:00 AM', 
+              status: 'completed', 
+              type: 'Consultation',
+              reason: 'Knee Pain'
+            }
+          ]
+          setAppointments([...demoAppts, ...realAppts])
+        } else {
+          setAppointments(realAppts)
+        }
       } catch (err) {
         showError('Failed to load appointments.')
       } finally {
@@ -28,12 +83,10 @@ export default function Appointments() {
 
   const filtered = appointments.filter(a => {
     if (filter === 'All') return true
-    // Map backend status to frontend filter
     const backendStatus = a.status.toLowerCase()
-    const filterStatus = filter.toLowerCase()
     
     if (filter === 'Upcoming') return backendStatus === 'pending' || backendStatus === 'confirmed'
-    return backendStatus === filterStatus
+    return backendStatus === filter.toLowerCase()
   })
 
   if (loading) {
@@ -77,8 +130,9 @@ export default function Appointments() {
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                app.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                app.status === 'confirmed' || app.status === 'Upcoming' ? 'bg-emerald-100 text-emerald-700' :
                 app.status === 'pending' ? 'bg-blue-100 text-blue-700' :
+                app.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
                 'bg-red-100 text-red-700'
               }`}>
                 {app.status}
@@ -104,7 +158,9 @@ export default function Appointments() {
                   <button className="flex-1 btn-primary py-2 text-xs flex items-center justify-center gap-1.5 shadow-sm">
                     {app.type === 'Online Call' ? <><Video size={14} /> Join Call</> : <><CheckCircle size={14} /> Confirmed</>}
                   </button>
-                  <button className="flex-1 px-4 py-2 bg-red-50 text-red-600 font-semibold rounded-xl text-xs hover:bg-red-100 transition-colors flex items-center justify-center gap-1">
+                  <button 
+                    onClick={() => handleCancel(app._id)}
+                    className="flex-1 px-4 py-2 bg-red-50 text-red-600 font-semibold rounded-xl text-xs hover:bg-red-100 transition-colors flex items-center justify-center gap-1">
                     <XCircle size={14} /> Cancel
                   </button>
                 </>
@@ -132,4 +188,5 @@ export default function Appointments() {
     </div>
   )
 }
+
 
