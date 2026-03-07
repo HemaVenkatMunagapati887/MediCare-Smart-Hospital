@@ -29,7 +29,7 @@ export default function DoctorDashboard() {
     if (newStatus === 'in-progress') {
       navigate('/doctor/diagnosis', { 
         state: { 
-          selectedPatientId: appt.patient?._id || appt.patient?.id || id,
+          selectedAppointmentId: id,
           patientName: appt.patient?.name 
         } 
       })

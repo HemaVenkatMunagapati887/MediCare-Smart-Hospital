@@ -141,7 +141,6 @@ export default function PatientDetails() {
     if (!selected) return
     navigate('/doctor/diagnosis', { 
       state: { 
-        selectedPatientId: selected.id,
         patientName: selected.name 
       } 
     })
