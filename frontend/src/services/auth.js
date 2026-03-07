@@ -29,9 +29,18 @@ export const logout = async () => {
   }
 };
 
-// Google OAuth Login/Register
+// Google OAuth Login/Register (for registration flow)
 export const googleLogin = async ({ idToken, role }) => {
   const response = await api.post('/auth/google', { idToken, role });
+  if (response.data && response.data.token) {
+    localStorage.setItem('sh_user', JSON.stringify(response.data));
+  }
+  return response;
+};
+
+// Google OAuth Login (auto-creates patient if not exists)
+export const googleLoginAuto = async (idToken) => {
+  const response = await api.post('/auth/google-login', { idToken });
   if (response.data && response.data.token) {
     localStorage.setItem('sh_user', JSON.stringify(response.data));
   }

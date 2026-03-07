@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { GoogleLogin } from '@react-oauth/google'
+import { googleLoginAuto } from '../../services/auth'
 import {
   HeartPulse, Mail, Lock, LogIn, Eye, EyeOff,
   ShieldCheck, Calendar, ClipboardList, CheckCircle2, AlertCircle
@@ -19,8 +21,9 @@ export default function Login() {
   const [showPassword, setShowPwd]  = useState(false)
   const [remember, setRemember]     = useState(false)
   const [loading, setLoading]       = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
-  const { login }    = useAuth()
+  const { login, loginWithData }    = useAuth()
   const navigate     = useNavigate()
   const location     = useLocation()
 
@@ -52,6 +55,29 @@ export default function Login() {
         showError(msg)
       }
       setLoading(false)
+    }
+  }
+
+  // Google Login Handler
+  const handleGoogleLogin = async (credentialResponse) => {
+    const token = credentialResponse.credential
+    setGoogleLoading(true)
+    setFieldErrors({})
+    try {
+      const res = await googleLoginAuto(token)
+      if (res.data && res.data.token) {
+        loginWithData(res.data)
+        showSuccess('Login successful!')
+        const role = res.data.role
+        if (role === 'admin') navigate('/admin')
+        else if (role === 'doctor') navigate('/doctor')
+        else navigate('/patient')
+      }
+    } catch (err) {
+      const msg = getErrorMessage(err, 'Google login failed. Please try again.')
+      showError(msg)
+    } finally {
+      setGoogleLoading(false)
     }
   }
 
@@ -180,7 +206,7 @@ export default function Login() {
             </label>
 
             {/* Submit */}
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading || googleLoading}
               className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
               {loading ? (
                 <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
@@ -190,6 +216,36 @@ export default function Login() {
               ) : <><LogIn size={18} /> Sign In</>}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400 font-medium uppercase">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Google Login Button */}
+          <div className="flex flex-col items-center">
+            {googleLoading ? (
+              <div className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border-2 border-gray-200 text-gray-500 font-semibold text-sm rounded-xl">
+                <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Signing in with Google...
+              </div>
+            ) : (
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={() => showError('Google sign-in failed. Please try again.')}
+                text="continue_with"
+                shape="rectangular"
+                size="large"
+                theme="outline"
+                width="320"
+              />
+            )}
+          </div>
 
           <p className="text-center text-gray-500 text-sm mt-7 pt-5 border-t border-gray-200">
             Don't have an account?{' '}

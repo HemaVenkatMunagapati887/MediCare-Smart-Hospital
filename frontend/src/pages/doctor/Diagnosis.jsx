@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Clock, FileText, CheckCircle, Search, Save, Upload, Activity, AlertCircle, X, Check, Stethoscope, User, Shield, Bot, AlertTriangle, Pill } from 'lucide-react'
+import { Clock, FileText, CheckCircle, Search, Save, Upload, Activity, AlertCircle, X, Check, Stethoscope, User, Shield, Bot, AlertTriangle, Pill, Hash } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api, { uploadFile } from '../../services/api'
 import { checkPrescriptionSafety } from '../../services/ai'
@@ -10,7 +10,7 @@ export default function Diagnosis() {
   const location = useLocation()
   const fileInputRef = useRef(null)
   const [appointments, setAppointments] = useState([])
-  const [patientId, setPatientId] = useState(location.state?.selectedPatientId || '')
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState(location.state?.selectedAppointmentId || '')
   const [diag, setDiag] = useState('')
   const [rx, setRx] = useState('')
   const [notes, setNotes] = useState('')
@@ -38,31 +38,27 @@ export default function Diagnosis() {
           try {
             const profRes = await api.get('/doctors/me')
             const apptRes = await api.get(`/appointments/doctor/${profRes.data.data._id}`)
-            // Get all appointments mapped to this doctor
-            realAppts = (apptRes.data.data || [])
+            // Get only ACTIVE appointments (not completed, cancelled, resolved, no-show)
+            const activeStatuses = ['pending', 'confirmed', 'in-progress', 'upcoming']
+            realAppts = (apptRes.data.data || []).filter(a => {
+              const status = (a.status || '').toLowerCase()
+              return activeStatuses.includes(status)
+            })
           } catch (e) {
             console.error("Fetch real appts error:", e)
           }
         }
 
         const demoAppts = isDemoDoctor ? [
-          { _id: 'd1', patient: { _id: 'p1', name: 'Venkat R.' }, timeSlot: '10:30 AM', status: 'Upcoming', reason: 'Chest Pain' },
-          { _id: 'd2', patient: { _id: 'p2', name: 'Rahul K.' }, timeSlot: '11:00 AM', status: 'Upcoming', reason: 'Migraine' },
-          { _id: 'd3', patient: { _id: 'p3', name: 'Anitha S.' }, timeSlot: '11:30 AM', status: 'Upcoming', reason: 'Knee Pain' }
+          { _id: 'd1', appointmentId: 'MED-APT-DEMO01', patient: { _id: 'p1', name: 'Venkat R.' }, timeSlot: '10:30 AM', status: 'confirmed', reason: 'Chest Pain' },
+          { _id: 'd2', appointmentId: 'MED-APT-DEMO02', patient: { _id: 'p2', name: 'Rahul K.' }, timeSlot: '11:00 AM', status: 'confirmed', reason: 'Migraine' },
+          { _id: 'd3', appointmentId: 'MED-APT-DEMO03', patient: { _id: 'p3', name: 'Anitha S.' }, timeSlot: '11:30 AM', status: 'pending', reason: 'Knee Pain' }
         ] : []
 
         const allAvailable = [...demoAppts, ...realAppts]
 
-        // Use a Map to ensure we show each patient only once in the dropdown
-        const patientMap = new Map()
-        allAvailable.forEach(a => {
-          const pId = a.patient?._id || a.patient?.id || a.patient
-          if (pId && !patientMap.has(pId)) {
-            patientMap.set(pId, a)
-          }
-        })
-
-        setAppointments(Array.from(patientMap.values()))
+        // Show each appointment separately (not deduplicated by patient) for accurate selection
+        setAppointments(allAvailable)
       } catch (err) {
         console.error("Diagnosis patient fetch error:", err)
       } finally {
@@ -76,20 +72,21 @@ export default function Diagnosis() {
   const handleSave = async (e) => {
     e.preventDefault()
 
-    if (!patientId) {
-      setError("Please select a patient first.")
+    if (!selectedAppointmentId) {
+      setError("Please select an appointment first.")
       return
     }
 
-    const isDemoPatient = String(patientId).startsWith('p')
+    // Demo appointments start with 'd'
+    const isDemoAppointment = String(selectedAppointmentId).startsWith('d')
 
-    if (isDemoPatient) {
+    if (isDemoAppointment) {
       setIsSaving(true)
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1200))
       setIsSaving(false)
       setSaved(true)
-      setPatientId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
+      setSelectedAppointmentId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
       setTimeout(() => setSaved(false), 5000)
       return
     }
@@ -97,10 +94,15 @@ export default function Diagnosis() {
     try {
       setIsSaving(true)
 
-      // Find the appointment for this patient
-      const appointment = appointments.find(a =>
-        a.patient?._id === patientId || a.patient?.id === patientId || a.patient === patientId
-      )
+      // Find the appointment by its _id
+      const appointment = appointments.find(a => a._id === selectedAppointmentId)
+
+      if (!appointment) {
+        setError("Selected appointment not found.")
+        return
+      }
+
+      const patientId = appointment.patient?._id || appointment.patient?.id || appointment.patient
 
       const payload = {
         patient: patientId,
@@ -110,19 +112,20 @@ export default function Diagnosis() {
       }
 
       // Create the visit/medical record with standard JSON
-      await api.post('/visits', payload)
+      const visitRes = await api.post('/visits', payload)
 
-      // Mark appointment as completed if it's a real DB appointment
-      if (appointment && !String(appointment._id).startsWith('d')) {
-        try {
-          await api.put(`/appointments/${appointment._id}`, { status: 'completed' })
-        } catch (apptErr) {
-          console.warn("Could not update appointment status:", apptErr.message)
-        }
+      // Mark appointment as RESOLVED (diagnosis completed)
+      try {
+        await api.put(`/appointments/${appointment._id}`, { 
+          status: 'resolved',
+          diagnosisId: visitRes.data?.data?._id 
+        })
+      } catch (apptErr) {
+        console.warn("Could not update appointment status:", apptErr.message)
       }
 
       setSaved(true)
-      setPatientId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
+      setSelectedAppointmentId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
 
       setTimeout(() => setSaved(false), 6000)
     } catch (err) {
@@ -134,9 +137,8 @@ export default function Diagnosis() {
     }
   }
 
-  const selectedPatientData = appointments.find(a =>
-    a.patient?._id === patientId || a.patient?.id === patientId || a.patient === patientId
-  )
+  // Find selected appointment by its _id
+  const selectedPatientData = appointments.find(a => a._id === selectedAppointmentId)
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -169,6 +171,7 @@ export default function Diagnosis() {
         weight: selectedPatientData?.patient?.weight
       }
 
+      const patientId = selectedPatientData?.patient?._id || selectedPatientData?.patient?.id || selectedPatientData?.patient
       const result = await checkPrescriptionSafety(rx, patientId, patientInfo)
       
       if (result.success && result.data) {
@@ -244,36 +247,39 @@ export default function Diagnosis() {
             </h2>
 
             <div className="space-y-5">
-              {/* Patient Selector */}
+              {/* Appointment Selector */}
               <div className="form-group">
                 <label className="form-label text-xs font-bold uppercase text-gray-500 tracking-wider flex items-center gap-1.5">
-                  <User size={14} className="text-blue-500" /> Select Patient *
+                  <Hash size={14} className="text-blue-500" /> Select Appointment *
                 </label>
                 {loadingPatients ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500 py-3">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-600"></div>
-                    Loading patients...
+                    Loading appointments...
                   </div>
                 ) : (
                   <select
                     required={!isDemoDoctor}
                     className="form-input focus:ring-teal-500 focus:border-teal-500 bg-gray-50 focus:bg-white"
-                    value={patientId}
-                    onChange={e => setPatientId(e.target.value)}
+                    value={selectedAppointmentId}
+                    onChange={e => setSelectedAppointmentId(e.target.value)}
                   >
-                    <option value="">-- Choose Patient --</option>
+                    <option value="">-- Choose Appointment --</option>
                     {appointments.map(a => {
-                      // Attempt to resolve the patient name from deeply nested populated fields or simple string
+                      // Resolve patient name
                       let pName = 'Unknown Patient';
                       if (a.patient) {
-                        if (typeof a.patient === 'string') pName = 'Patient ID: ' + a.patient.substring(0,6) + '...';
+                        if (typeof a.patient === 'string') pName = 'Patient';
                         else if (a.patient.name) pName = a.patient.name;
                         else if (a.patient.user && a.patient.user.name) pName = a.patient.user.name;
                       }
                       
+                      // Display format: AppointmentID — PatientName — TimeSlot
+                      const apptIdDisplay = a.appointmentId || `APT-${a._id.substring(0,6)}`;
+                      
                       return (
-                        <option key={a._id} value={a.patient?._id || a.patient?.id || a.patient}>
-                          {pName} ({a.timeSlot || new Date(a.date).toLocaleDateString() || 'New Appt'}) {a.reason ? `- ${a.reason}` : ''}
+                        <option key={a._id} value={a._id}>
+                          {apptIdDisplay} — {pName} — {a.timeSlot || new Date(a.date).toLocaleDateString()}
                         </option>
                       )
                     })}
@@ -392,13 +398,22 @@ export default function Diagnosis() {
             <h3 className="font-bold text-gray-900 border-b border-teal-100 pb-3 mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
               <Stethoscope size={16} className="text-teal-600" /> Reference Area
             </h3>
-            {!patientId ? (
+            {!selectedAppointmentId ? (
               <div className="text-center py-6">
                 <Search size={32} className="mx-auto text-teal-200 mb-2" />
-                <p className="text-sm text-gray-500 font-medium">Select a patient to load their appointment details here.</p>
+                <p className="text-sm text-gray-500 font-medium">Select an appointment to load details here.</p>
               </div>
             ) : (
               <div className="space-y-3 animate-fadeIn">
+                {/* Appointment ID - Prominent Display */}
+                <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 shadow-sm">
+                  <p className="text-xs text-blue-500 font-bold uppercase mb-1 flex items-center gap-1">
+                    <Hash size={12} /> Appointment ID
+                  </p>
+                  <p className="text-sm font-mono font-bold text-blue-800">
+                    {selectedPatientData?.appointmentId || `APT-${selectedAppointmentId.substring(0,6)}`}
+                  </p>
+                </div>
                 <div className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Patient Name</p>
                   <p className="text-sm font-bold text-gray-900">
