@@ -27,15 +27,13 @@ export default function Diagnosis() {
       try {
         setLoadingPatients(true)
         let realAppts = []
-        
+
         if (user?._id || user?.id) {
           try {
             const profRes = await api.get('/doctors/me')
             const apptRes = await api.get(`/appointments/doctor/${profRes.data.data._id}`)
-            // Only show confirmed/pending/in-progress appointments (active ones)
-            realAppts = (apptRes.data.data || []).filter(a => 
-              ['pending', 'confirmed', 'in-progress'].includes(a.status?.toLowerCase())
-            )
+            // Get all appointments mapped to this doctor
+            realAppts = (apptRes.data.data || [])
           } catch (e) {
             console.error("Fetch real appts error:", e)
           }
@@ -48,7 +46,7 @@ export default function Diagnosis() {
         ] : []
 
         const allAvailable = [...demoAppts, ...realAppts]
-        
+
         // Use a Map to ensure we show each patient only once in the dropdown
         const patientMap = new Map()
         allAvailable.forEach(a => {
@@ -71,8 +69,15 @@ export default function Diagnosis() {
 
   const handleSave = async (e) => {
     e.preventDefault()
-    
-    if (isDemoDoctor) {
+
+    if (!patientId) {
+      setError("Please select a patient first.")
+      return
+    }
+
+    const isDemoPatient = String(patientId).startsWith('p')
+
+    if (isDemoPatient) {
       setIsSaving(true)
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1200))
@@ -83,29 +88,23 @@ export default function Diagnosis() {
       return
     }
 
-    if (!patientId) {
-      setError("Please select a patient first.")
-      return
-    }
-
     try {
       setIsSaving(true)
 
       // Find the appointment for this patient
-      const appointment = appointments.find(a => 
+      const appointment = appointments.find(a =>
         a.patient?._id === patientId || a.patient?.id === patientId || a.patient === patientId
       )
 
-      const recordData = {
+      const payload = {
         patient: patientId,
         title: diag,
         description: rx + (notes ? `\n\nDoctor Notes: ${notes}` : ''),
-        recordType: selectedFile ? 'Lab Report' : recordType,
-        fileUrl: selectedFile ? `/uploads/${selectedFile.name}` : ''
+        recordType: selectedFile ? 'Lab Report' : recordType
       }
 
-      // Create the visit/medical record
-      await api.post('/visits', recordData)
+      // Create the visit/medical record with standard JSON
+      await api.post('/visits', payload)
 
       // Mark appointment as completed if it's a real DB appointment
       if (appointment && !String(appointment._id).startsWith('d')) {
@@ -118,7 +117,7 @@ export default function Diagnosis() {
 
       setSaved(true)
       setPatientId(''); setDiag(''); setRx(''); setNotes(''); setSelectedFile(null); setRecordType('Prescription')
-      
+
       setTimeout(() => setSaved(false), 6000)
     } catch (err) {
       console.error("Save diagnosis failed:", err)
@@ -129,7 +128,7 @@ export default function Diagnosis() {
     }
   }
 
-  const selectedPatientData = appointments.find(a => 
+  const selectedPatientData = appointments.find(a =>
     a.patient?._id === patientId || a.patient?.id === patientId || a.patient === patientId
   )
 
@@ -177,18 +176,28 @@ export default function Diagnosis() {
                     Loading patients...
                   </div>
                 ) : (
-                  <select 
-                    required={!isDemoDoctor} 
-                    className="form-input focus:ring-teal-500 focus:border-teal-500 bg-gray-50 focus:bg-white" 
-                    value={patientId} 
+                  <select
+                    required={!isDemoDoctor}
+                    className="form-input focus:ring-teal-500 focus:border-teal-500 bg-gray-50 focus:bg-white"
+                    value={patientId}
                     onChange={e => setPatientId(e.target.value)}
                   >
                     <option value="">-- Choose Patient --</option>
-                    {appointments.map(a => (
-                      <option key={a._id} value={a.patient?._id || a.patient?.id || a.patient}>
-                        {a.patient?.name || a.patient?.user?.name || 'Unknown'} ({a.timeSlot || 'New Appt'}) - {a.reason || ''}
-                      </option>
-                    ))}
+                    {appointments.map(a => {
+                      // Attempt to resolve the patient name from deeply nested populated fields or simple string
+                      let pName = 'Unknown Patient';
+                      if (a.patient) {
+                        if (typeof a.patient === 'string') pName = 'Patient ID: ' + a.patient.substring(0,6) + '...';
+                        else if (a.patient.name) pName = a.patient.name;
+                        else if (a.patient.user && a.patient.user.name) pName = a.patient.user.name;
+                      }
+                      
+                      return (
+                        <option key={a._id} value={a.patient?._id || a.patient?.id || a.patient}>
+                          {pName} ({a.timeSlot || new Date(a.date).toLocaleDateString() || 'New Appt'}) {a.reason ? `- ${a.reason}` : ''}
+                        </option>
+                      )
+                    })}
                     {appointments.length === 0 && !loadingPatients && (
                       <option disabled>No active appointments found</option>
                     )}
@@ -201,15 +210,14 @@ export default function Diagnosis() {
                 <label className="form-label text-xs font-bold uppercase text-gray-500 tracking-wider">Record Type</label>
                 <div className="flex gap-3">
                   {['Prescription', 'Lab Report', 'X-Ray', 'Other'].map(type => (
-                    <label key={type} className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-all ${
-                      recordType === type 
-                        ? 'bg-teal-50 border-teal-400 text-teal-700' 
+                    <label key={type} className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-all ${recordType === type
+                        ? 'bg-teal-50 border-teal-400 text-teal-700'
                         : 'border-gray-200 text-gray-600 hover:border-teal-300'
-                    }`}>
-                      <input 
-                        type="radio" 
-                        name="recordType" 
-                        value={type} 
+                      }`}>
+                      <input
+                        type="radio"
+                        name="recordType"
+                        value={type}
                         checked={recordType === type}
                         onChange={() => setRecordType(type)}
                         className="hidden"
@@ -226,13 +234,13 @@ export default function Diagnosis() {
                 <label className="form-label text-xs font-bold uppercase text-gray-500 tracking-wider flex items-center gap-1.5">
                   <AlertCircle size={14} className="text-orange-500" /> Symptoms & Diagnosis *
                 </label>
-                <textarea 
-                  required 
-                  rows={4} 
-                  className="form-input resize-none bg-gray-50 focus:bg-white focus:ring-orange-500 focus:border-orange-500" 
-                  value={diag} 
+                <textarea
+                  required
+                  rows={4}
+                  className="form-input resize-none bg-gray-50 focus:bg-white focus:ring-orange-500 focus:border-orange-500"
+                  value={diag}
                   onChange={e => setDiag(e.target.value)}
-                  placeholder="E.g., Patient experiencing mild chest pain and shortness of breath. BP: 130/85 mmHg. Pulse: 78 bpm..." 
+                  placeholder="E.g., Patient experiencing mild chest pain and shortness of breath. BP: 130/85 mmHg. Pulse: 78 bpm..."
                 />
               </div>
 
@@ -241,35 +249,35 @@ export default function Diagnosis() {
                 <label className="form-label text-xs font-bold uppercase text-gray-500 tracking-wider flex items-center gap-1.5">
                   <Check size={14} className="text-teal-500" /> Prescribed Medication *
                 </label>
-                <textarea 
-                  required 
-                  rows={4} 
-                  className="form-input resize-none bg-gray-50 focus:bg-white focus:ring-teal-500 focus:border-teal-500" 
-                  value={rx} 
+                <textarea
+                  required
+                  rows={4}
+                  className="form-input resize-none bg-gray-50 focus:bg-white focus:ring-teal-500 focus:border-teal-500"
+                  value={rx}
                   onChange={e => setRx(e.target.value)}
-                  placeholder={"1. Aspirin 75mg (1-0-0) for 30 days\n2. Pantoprazole 40mg (1-0-0) before breakfast\n3. Follow up after 2 weeks"} 
+                  placeholder={"1. Aspirin 75mg (1-0-0) for 30 days\n2. Pantoprazole 40mg (1-0-0) before breakfast\n3. Follow up after 2 weeks"}
                 />
               </div>
 
               {/* Notes */}
               <div className="form-group">
                 <label className="form-label text-xs font-bold uppercase text-gray-500 tracking-wider">Doctor Notes (Internal only)</label>
-                <textarea 
-                  rows={2} 
-                  className="form-input resize-none bg-gray-50 focus:bg-white" 
-                  value={notes} 
+                <textarea
+                  rows={2}
+                  className="form-input resize-none bg-gray-50 focus:bg-white"
+                  value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  placeholder="Private notes, follow-up instructions, referrals..." 
+                  placeholder="Private notes, follow-up instructions, referrals..."
                 />
               </div>
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            disabled={isSaving} 
+          <button
+            type="submit"
+            disabled={isSaving}
             className="w-full py-4 bg-teal-600 text-white font-bold rounded-xl shadow-md hover:bg-teal-700 hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed text-base">
-            {isSaving 
+            {isSaving
               ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Saving Record...</>
               : <><Save size={18} /> Save &amp; Finalize Record</>
             }
@@ -320,14 +328,14 @@ export default function Diagnosis() {
           </div>
 
           {/* File Attachment */}
-          <div 
+          <div
             onClick={handleAttachClick}
             className={`card shadow-sm border-2 border-dashed transition-all cursor-pointer text-center group py-6 px-3 ${selectedFile ? 'border-teal-500 bg-teal-50' : 'border-gray-300 hover:border-teal-400 hover:bg-teal-50/30'}`}
           >
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
               onChange={handleFileChange}
               accept=".pdf,.jpg,.jpeg,.png"
             />
@@ -338,7 +346,7 @@ export default function Diagnosis() {
                 </div>
                 <p className="text-xs font-bold text-teal-800 truncate px-2">{selectedFile.name}</p>
                 <p className="text-[10px] text-teal-600">{(selectedFile.size / 1024).toFixed(0)} KB</p>
-                <button 
+                <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setSelectedFile(null); setRecordType('Prescription') }}
                   className="text-[10px] text-red-500 font-bold uppercase hover:underline"

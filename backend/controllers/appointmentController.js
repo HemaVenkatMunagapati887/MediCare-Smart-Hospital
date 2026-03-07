@@ -110,7 +110,7 @@ exports.updateAppointmentStatus = asyncHandler(async (req, res, next) => {
   }
 
   appointment = await Appointment.findByIdAndUpdate(req.params.id, { status: req.body.status }, {
-    new: true,
+    returnDocument: 'after',
     runValidators: true
   });
 
