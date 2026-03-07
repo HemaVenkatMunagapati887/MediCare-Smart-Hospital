@@ -1,17 +1,8 @@
-import React, { useState } from 'react'
-import { Calendar, Clock, User, CheckCircle, ChevronRight, Check } from 'lucide-react'
-import { showSuccess } from '../../utils/toast'
-
-const doctors = [
-  { id: 1, name: 'Dr. Ravi Kumar', spec: 'Cardiologist', exp: '12 Years Experience' },
-  { id: 2, name: 'Dr. Priya Sharma', spec: 'Neurologist', exp: '8 Years Experience' },
-  { id: 3, name: 'Dr. Arjun Mehta', spec: 'Orthopedic', exp: '15 Years Experience' },
-  { id: 4, name: 'Dr. Sneha Patel', spec: 'Pediatrician', exp: '10 Years Experience' },
-]
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Clock, User, CheckCircle, ChevronRight, Check, AlertCircle, Activity } from 'lucide-react'
 import api from '../../services/api'
+import { showSuccess } from '../../utils/toast'
 
 const timeSlots = ['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '04:00 PM', '04:30 PM', '05:00 PM']
 
@@ -55,12 +46,11 @@ export default function BookAppointment() {
         reason: medicalNotes || 'General Consultation',
       }
 
-  const handleBook = () => {
-    showSuccess(`Appointment booked successfully with ${doctors.find(d => d.id === selectedDoctor)?.name} on ${selectedDate} at ${selectedTime}!`)
-    setStep(1); setSelectedDoctor(null); setSelectedDate(''); setSelectedTime('')
       await api.post('/appointments', payload)
       
+      showSuccess('Appointment booked successfully!')
       setStep(4) // Successful booking step
+      
       setTimeout(() => {
         navigate('/patient/dashboard')
       }, 5000)
