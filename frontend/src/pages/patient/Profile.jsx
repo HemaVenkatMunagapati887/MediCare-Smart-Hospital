@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { User, Mail, Phone, MapPin, Activity, Save, Key, UserCircle, Edit3, HeartPulse, CheckCircle, Calendar } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
+import { showSuccess, showError, getErrorMessage } from '../../utils/toast'
 
 export default function Profile() {
   const { user } = useAuth()
@@ -56,7 +57,7 @@ export default function Profile() {
           emergencyContact: data.emergencyContact || ''
         })
       } catch (err) {
-        console.error('Error fetching profile:', err)
+        showError('Failed to load profile data.')
       } finally {
         setLoading(false)
       }
@@ -84,8 +85,9 @@ export default function Profile() {
         emergencyContact: profile.emergencyContact
       })
       setEditing(false)
+      showSuccess('Profile updated successfully!')
     } catch (err) {
-      alert('Failed to update profile: ' + (err.response?.data?.message || err.message))
+      showError(getErrorMessage(err, 'Failed to update profile'))
     } finally {
       setSaving(false)
     }

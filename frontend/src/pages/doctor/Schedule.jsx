@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
 import { Calendar, Save, CheckCircle, Clock } from 'lucide-react'
+import { showSuccess } from '../../utils/toast'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 export default function Schedule() {
-  const [saved, setSaved] = useState(false)
-
   const [schedule, setSchedule] = useState({
     Monday: { active: true, start: '09:00', end: '17:00' },
     Tuesday: { active: true, start: '09:00', end: '17:00' },
@@ -25,8 +24,7 @@ export default function Schedule() {
   }
 
   const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    showSuccess('Schedule settings updated successfully!')
   }
 
   return (
@@ -40,13 +38,6 @@ export default function Schedule() {
           <Save size={18} /> Update Timings
         </button>
       </div>
-
-      {saved && (
-        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-4 rounded-xl shadow-sm animate-fadeIn">
-          <CheckCircle size={20} className="flex-shrink-0" />
-          <p className="font-medium">Schedule settings updated successfully!</p>
-        </div>
-      )}
 
       <div className="card shadow-sm border border-gray-100 p-0 overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-teal-50 flex items-center gap-3">

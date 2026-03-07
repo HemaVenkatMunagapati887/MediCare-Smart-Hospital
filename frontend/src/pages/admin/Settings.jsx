@@ -3,6 +3,7 @@ import {
     Bell, Lock, Palette, ShieldCheck, Globe, Trash2, Save,
     User, Mail, Phone, Building2, Key, Eye, EyeOff, CheckCircle, AlertTriangle
 } from 'lucide-react'
+import { showSuccess } from '../../utils/toast'
 
 const TABS = [
     { id: 'profile', label: 'Hospital Profile', icon: Building2 },
@@ -13,7 +14,6 @@ const TABS = [
 
 export default function AdminSettings() {
     const [tab, setTab] = useState('profile')
-    const [saved, setSaved] = useState(false)
     const [showPass, setShowPass] = useState(false)
 
     const [profile, setProfile] = useState({
@@ -42,8 +42,7 @@ export default function AdminSettings() {
     })
 
     const handleSave = () => {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        showSuccess('Settings saved successfully!')
     }
 
     return (
@@ -52,13 +51,6 @@ export default function AdminSettings() {
                 <h1 className="section-title">Settings</h1>
                 <p className="section-subtitle">Configure hospital system preferences and security</p>
             </div>
-
-            {saved && (
-                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-3 rounded-xl">
-                    <CheckCircle size={16} />
-                    Settings saved successfully!
-                </div>
-            )}
 
             <div className="flex flex-col md:flex-row gap-6">
                 {/* Tabs */}

@@ -3,8 +3,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   HeartPulse, Mail, Lock, LogIn, Eye, EyeOff,
-  ShieldCheck, Calendar, ClipboardList, CheckCircle2
+  ShieldCheck, Calendar, ClipboardList, CheckCircle2, AlertCircle
 } from 'lucide-react'
+import { showSuccess, showError, getErrorMessage } from '../../utils/toast'
 
 const FEATURES = [
   { icon: Calendar,      text: 'Book & manage appointments online' },
@@ -18,8 +19,7 @@ export default function Login() {
   const [showPassword, setShowPwd]  = useState(false)
   const [remember, setRemember]     = useState(false)
   const [loading, setLoading]       = useState(false)
-  const [error, setError]           = useState('')
-  const [successMsg, setSuccessMsg] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const { login }    = useAuth()
   const navigate     = useNavigate()
   const location     = useLocation()
@@ -27,7 +27,7 @@ export default function Login() {
   // Show success toast if redirected from registration
   useEffect(() => {
     if (location.state?.registered) {
-      setSuccessMsg('Registration successful! Please sign in with your email and password.')
+      showSuccess('Registration successful! Please sign in with your email and password.')
       window.history.replaceState({}, document.title)
     }
   }, [location.state])
@@ -35,15 +35,22 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
+    setFieldErrors({})
     try {
       const res = await login({ email, password })
       const role = res?.data?.role || res?.role
+      showSuccess('Login successful!')
       if (role === 'admin')        navigate('/admin')
       else if (role === 'doctor')  navigate('/doctor')
       else                         navigate('/patient')
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Invalid email or password.')
+      const msg = getErrorMessage(err, 'Invalid email or password.')
+      // Show inline for credential-specific errors
+      if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('password') || msg.toLowerCase().includes('credentials') || msg.toLowerCase().includes('invalid')) {
+        setFieldErrors({ credentials: msg })
+      } else {
+        showError(msg)
+      }
       setLoading(false)
     }
   }
@@ -108,15 +115,16 @@ export default function Login() {
             <p className="text-gray-500 mt-1">Sign in to your account to continue</p>
           </div>
 
-          {/* Alerts */}
-          {successMsg && (
-            <div className="mb-5 flex items-start gap-2 bg-green-50 text-green-700 text-sm p-3.5 rounded-xl border border-green-200 animate-fadeIn">
-              <CheckCircle2 size={17} className="mt-0.5 flex-shrink-0" /><span>{successMsg}</span>
-            </div>
-          )}
-          {error && (
+          {/* Inline credential error */}
+          {fieldErrors.credentials && (
             <div className="mb-5 flex items-start gap-2 bg-red-50 text-red-600 text-sm p-3.5 rounded-xl border border-red-100 animate-fadeIn">
-              <span className="mt-0.5 flex-shrink-0">⚠️</span><span>{error}</span>
+              <AlertCircle size={17} className="mt-0.5 flex-shrink-0" />
+              <div>
+                <span>{fieldErrors.credentials}</span>
+                {fieldErrors.credentials.toLowerCase().includes('account already') && (
+                  <Link to="/register" className="ml-1 text-blue-600 font-semibold hover:underline text-xs">Create Account</Link>
+                )}
+              </div>
             </div>
           )}
 

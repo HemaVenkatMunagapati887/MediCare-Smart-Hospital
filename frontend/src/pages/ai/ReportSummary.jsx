@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { FileText, Bot, Upload, RefreshCw, AlertTriangle, CheckCircle, Activity, Stethoscope, ChevronRight, ShieldCheck, Calendar } from 'lucide-react'
 import Navbar from '../../components/Navbar'
+import { showWarning } from '../../utils/toast'
 
 export default function ReportSummary() {
   const [file, setFile] = useState(null)
@@ -9,7 +10,7 @@ export default function ReportSummary() {
 
   const handleUpload = (e) => {
     e.preventDefault()
-    if (!file) return alert("Please select a file to upload.")
+    if (!file) return showWarning("Please select a file to upload.")
 
     setLoading(true)
     setTimeout(() => {

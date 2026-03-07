@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Calendar, Clock, Video, FileText, CheckCircle, Search, Save, Upload, Activity, AlertCircle, X, ChevronRight, Check } from 'lucide-react'
+import { showSuccess } from '../../utils/toast'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 
@@ -45,6 +46,10 @@ export default function Diagnosis() {
 
   const handleSave = async (e) => {
     e.preventDefault()
+    showSuccess('Record saved successfully! The prescription has been synchronized with the patient\'s portal.')
+    setTimeout(() => {
+      setPatient(''); setDiag(''); setRx(''); setNotes('')
+    }, 500)
     
     if (isDemoDoctor) {
       setSaved(true)
@@ -91,13 +96,6 @@ export default function Diagnosis() {
         <h1 className="section-title">Add Diagnosis</h1>
         <p className="section-subtitle">Record patient consultation details, symptoms, and prescriptions</p>
       </div>
-
-      {saved && (
-        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-4 rounded-xl shadow-sm animate-fadeIn">
-          <CheckCircle size={20} className="flex-shrink-0" />
-          <p className="font-medium">Record saved successfully! The prescription has been synchronized with the patient's portal.</p>
-        </div>
-      )}
 
       <form onSubmit={handleSave} className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6 flex flex-col h-full">

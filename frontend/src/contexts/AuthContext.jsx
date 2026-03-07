@@ -22,13 +22,21 @@ export function AuthProvider({ children }) {
     return res
   }
 
+  // Auto-login: directly set user data (used after registration)
+  const loginWithData = (userData) => {
+    if (userData && userData.token) {
+      localStorage.setItem('sh_user', JSON.stringify(userData))
+    }
+    setUser(userData)
+  }
+
   const logout = () => {
     authService.logout()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, googleLogin, logout }}>
+    <AuthContext.Provider value={{ user, login, googleLogin, loginWithData, logout }}>
       {children}
     </AuthContext.Provider>
   )
