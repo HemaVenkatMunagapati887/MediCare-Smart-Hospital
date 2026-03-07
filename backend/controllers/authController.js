@@ -241,6 +241,63 @@ exports.googleAuth = async (req, res) => {
   }
 };
 
+// @desc    Google OAuth login (auto-creates patient account if not exists)
+// @route   POST /api/v1/auth/google-login
+// @access  Public
+exports.googleAuthLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: 'Google ID token is required' });
+    }
+
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    } catch (err) {
+      return res.status(401).json({ success: false, message: 'Invalid Google token' });
+    }
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name } = payload;
+
+    // Check if user exists by googleId or email
+    let user = await User.findOne({ googleId });
+    if (!user) {
+      user = await User.findOne({ email });
+      if (user) {
+        // Link Google account to existing user
+        user.googleId = googleId;
+        if (!user.authProvider.includes('google')) user.authProvider.push('google');
+        await user.save();
+      } else {
+        // Auto-create new user as patient (no password required for Google-only accounts)
+        user = await User.create({
+          name,
+          email,
+          googleId,
+          role: 'patient',
+          authProvider: ['google'],
+        });
+        // Create patient profile
+        await Patient.create({ user: user._id, gender: 'Not Specified', bloodGroup: 'Unknown' });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } catch (err) {
+    console.error('Google Login Error:', err.message);
+    res.status(500).json({ success: false, message: err.message || 'Google login failed' });
+  }
+};
+
 // @desc    Google OAuth register (new users with role + password + doctor check)
 // @route   POST /api/v1/auth/google-register
 // @access  Public

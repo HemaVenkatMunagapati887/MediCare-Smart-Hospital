@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Clock, FileText, CheckCircle, Search, Save, Upload, Activity, AlertCircle, X, Check, Stethoscope, User, Shield, Bot, AlertTriangle, Pill } from 'lucide-react'
+import { Clock, FileText, CheckCircle, Search, Save, Upload, Activity, AlertCircle, X, Check, Stethoscope, User, Shield, Bot, AlertTriangle, Pill, Hash } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api, { uploadFile } from '../../services/api'
 import { checkPrescriptionSafety } from '../../services/ai'
@@ -47,9 +47,9 @@ export default function Diagnosis() {
         }
 
         const demoAppts = isDemoDoctor ? [
-          { _id: 'd1', patient: { _id: 'p1', name: 'Venkat R.' }, timeSlot: '10:30 AM', status: 'Upcoming', reason: 'Chest Pain' },
-          { _id: 'd2', patient: { _id: 'p2', name: 'Rahul K.' }, timeSlot: '11:00 AM', status: 'Upcoming', reason: 'Migraine' },
-          { _id: 'd3', patient: { _id: 'p3', name: 'Anitha S.' }, timeSlot: '11:30 AM', status: 'Upcoming', reason: 'Knee Pain' }
+          { _id: 'd1', appointmentId: 'MED-APT-DEMO01', patient: { _id: 'p1', name: 'Venkat R.' }, timeSlot: '10:30 AM', status: 'confirmed', reason: 'Chest Pain' },
+          { _id: 'd2', appointmentId: 'MED-APT-DEMO02', patient: { _id: 'p2', name: 'Rahul K.' }, timeSlot: '11:00 AM', status: 'confirmed', reason: 'Migraine' },
+          { _id: 'd3', appointmentId: 'MED-APT-DEMO03', patient: { _id: 'p3', name: 'Anitha S.' }, timeSlot: '11:30 AM', status: 'pending', reason: 'Knee Pain' }
         ] : []
 
         const allAvailable = [...demoAppts, ...realAppts]
@@ -226,7 +226,7 @@ export default function Diagnosis() {
             </h2>
 
             <div className="space-y-5">
-              {/* Patient Selector */}
+              {/* Appointment Selector */}
               <div className="form-group">
                 <label className="form-label text-xs font-bold uppercase text-gray-500 tracking-wider flex items-center gap-1.5">
                   <User size={14} className="text-blue-500" /> Select Active Consultation *
@@ -382,6 +382,15 @@ export default function Diagnosis() {
               </div>
             ) : (
               <div className="space-y-3 animate-fadeIn">
+                {/* Appointment ID - Prominent Display */}
+                <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 shadow-sm">
+                  <p className="text-xs text-blue-500 font-bold uppercase mb-1 flex items-center gap-1">
+                    <Hash size={12} /> Appointment ID
+                  </p>
+                  <p className="text-sm font-mono font-bold text-blue-800">
+                    {selectedPatientData?.appointmentId || `APT-${selectedAppointmentId.substring(0,6)}`}
+                  </p>
+                </div>
                 <div className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Patient Name</p>
                   <p className="text-sm font-bold text-gray-900">
