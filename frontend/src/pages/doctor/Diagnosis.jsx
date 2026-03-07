@@ -388,7 +388,7 @@ export default function Diagnosis() {
                     <Hash size={12} /> Appointment ID
                   </p>
                   <p className="text-sm font-mono font-bold text-blue-800">
-                    {selectedPatientData?.appointmentId || `APT-${selectedAppointmentId.substring(0,6)}`}
+                    {selectedPatientData?.appointmentId || (selectedApptId ? `APT-${selectedApptId.substring(0,6)}` : '—')}
                   </p>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
