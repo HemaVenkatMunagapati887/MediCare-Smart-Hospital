@@ -42,7 +42,7 @@ exports.updatePatientProfile = asyncHandler(async (req, res, next) => {
     patient = await Patient.findOneAndUpdate(
       { user: req.user.id },
       req.body,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
   } else {
     // Create

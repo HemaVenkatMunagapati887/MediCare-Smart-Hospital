@@ -1,9 +1,12 @@
 import React from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, Navigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { HeartPulse } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function PublicLayout() {
+  const { user } = useAuth()
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />

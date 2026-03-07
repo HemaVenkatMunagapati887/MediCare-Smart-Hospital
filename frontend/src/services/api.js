@@ -2,10 +2,8 @@ import axios from 'axios';
 import { showError } from '../utils/toast';
 
 const api = axios.create({
-  baseURL: '/api/v1',
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL: '/api/v1'
+  // Removed hardcoded Content-Type: application/json so Axios can auto-detect FormData
 });
 
 // Add a request interceptor to add the auth token
@@ -15,6 +13,14 @@ api.interceptors.request.use(
     if (user && user.token) {
       config.headers.Authorization = `Bearer ${user.token}`;
     }
+
+    // Explicitly set Content-Type to application/json if it's not FormData
+    if (!(config.data instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+    // If it is FormData, we let Axios completely handle the Content-Type automatically
+    // so it can dynamically inject the boundary string.
+    
     return config;
   },
   (error) => {
