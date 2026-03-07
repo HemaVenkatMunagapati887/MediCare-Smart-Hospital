@@ -406,17 +406,9 @@ exports.deleteAppointment = asyncHandler(async (req, res, next) => {
     throw new Error('Not authorized to delete this appointment');
   }
 
-  // Can only delete pending appointments
-  if (appointment.status !== 'pending') {
-    res.status(400);
-    throw new Error('Can only delete pending appointments. Use status update to cancel.');
-  }
-
-  await Appointment.findByIdAndDelete(req.params.id);
-
-  res.status(200).json({
-    success: true,
-    message: 'Appointment deleted successfully'
+  appointment = await Appointment.findByIdAndUpdate(req.params.id, { status: req.body.status }, {
+    returnDocument: 'after',
+    runValidators: true
   });
 });
 

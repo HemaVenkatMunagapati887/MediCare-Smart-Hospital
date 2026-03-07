@@ -93,7 +93,7 @@ exports.updateDoctor = asyncHandler(async (req, res, next) => {
   }
 
   doctor = await Doctor.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
+    returnDocument: 'after',
     runValidators: true
   });
 
