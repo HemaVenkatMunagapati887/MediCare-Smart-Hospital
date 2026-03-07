@@ -134,11 +134,34 @@ exports.bookAppointment = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/appointments/doctor/:doctorId
 // @access  Private
 exports.getDoctorAppointments = asyncHandler(async (req, res, next) => {
-  // If user is a doctor, they can only see their own appointments (unless they are admin)
-  // But we usually pass the doctor's profile ID here, not the User ID.
-  
-  const appointments = await Appointment.find({ doctor: req.params.doctorId })
-    .populate('patient', 'name email');
+  const query = { doctor: req.params.doctorId };
+
+  // Filter by status if provided (comma-separated, e.g. ?status=pending,confirmed,in-progress)
+  if (req.query.status) {
+    const statuses = req.query.status.split(',').map(s => s.trim());
+    query.status = { $in: statuses };
+  }
+
+  // Filter by date if provided (e.g. ?date=today or ?date=2026-03-08)
+  if (req.query.date) {
+    let startOfDay, endOfDay;
+    if (req.query.date === 'today') {
+      startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+    } else {
+      startOfDay = new Date(req.query.date);
+      startOfDay.setHours(0, 0, 0, 0);
+      endOfDay = new Date(req.query.date);
+      endOfDay.setHours(23, 59, 59, 999);
+    }
+    query.date = { $gte: startOfDay, $lte: endOfDay };
+  }
+
+  const appointments = await Appointment.find(query)
+    .populate('patient', 'name email')
+    .sort({ date: 1, timeSlot: 1 });
 
   res.status(200).json({
     success: true,

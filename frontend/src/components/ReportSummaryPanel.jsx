@@ -68,7 +68,7 @@ export default function ReportSummaryPanel({ isOpen, onClose, patientName }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-[60] overflow-hidden" style={{ top: '70px' }}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
       

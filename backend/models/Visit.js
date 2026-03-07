@@ -10,6 +10,10 @@ const medicalRecordSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Doctor'
   },
+  appointment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Appointment'
+  },
   title: {
     type: String,
     required: [true, 'Please add a title for the record']
