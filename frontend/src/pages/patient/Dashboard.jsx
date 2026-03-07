@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Calendar, User, FileText, Bot, Clock, ArrowRight, ShieldCheck, HeartPulse, Activity } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
+import { showError } from '../../utils/toast'
 
 export default function PatientDashboard() {
   const { user } = useAuth()
@@ -22,7 +23,7 @@ export default function PatientDashboard() {
         const visitsRes = await api.get('/visits')
         setVisits(visitsRes.data.data || [])
       } catch (err) {
-        console.error("Dashboard fetch error:", err)
+        showError('Failed to load dashboard data. Please refresh.')
       } finally {
         setLoading(false)
       }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Bot, Search, AlertCircle, ArrowRight, ShieldCheck, Activity, Stethoscope } from 'lucide-react'
+import { showWarning } from '../../utils/toast'
 
 const symptomsData = [
   { id: 'fever', label: 'Fever' }, { id: 'cough', label: 'Cough' },
@@ -18,7 +19,7 @@ export default function SymptomChecker() {
   }
 
   const analyze = () => {
-    if (selected.length === 0) return alert("Select at least one symptom")
+    if (selected.length === 0) return showWarning("Please select at least one symptom")
     setLoading(true)
     setTimeout(() => {
       // Mock logic based on selections

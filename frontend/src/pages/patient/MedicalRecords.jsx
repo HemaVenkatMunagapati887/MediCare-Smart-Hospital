@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { FileText, Download, Activity, HeartPulse, ShieldCheck, Microscope, Layers } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
+import { showError } from '../../utils/toast'
 
 const TABS = ['Overview', 'Lab Reports', 'Prescriptions']
 
@@ -23,7 +24,7 @@ export default function MedicalRecords() {
         setRecords(recordsRes.data.data || [])
         setProfile(profileRes.data.data || {})
       } catch (err) {
-        console.error('Error fetching records:', err)
+        showError('Failed to load medical records.')
       } finally {
         setLoading(false)
       }

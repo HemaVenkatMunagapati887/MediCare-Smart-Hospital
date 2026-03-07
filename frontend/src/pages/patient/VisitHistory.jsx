@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Calendar, Clock, Stethoscope, FileText, Download, Activity, HeartPulse } from 'lucide-react'
 import api from '../../services/api'
+import { showError } from '../../utils/toast'
 
 export default function VisitHistory() {
   const [history, setHistory] = useState([])
@@ -13,7 +14,7 @@ export default function VisitHistory() {
         const res = await api.get('/visits')
         setHistory(res.data.data || [])
       } catch (err) {
-        console.error('Error fetching history:', err)
+        showError('Failed to load visit history.')
       } finally {
         setLoading(false)
       }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Calendar, Clock, Video, FileText, CheckCircle, XCircle, User } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
+import { showError } from '../../utils/toast'
 
 export default function Appointments() {
   const { user } = useAuth()
@@ -16,7 +17,7 @@ export default function Appointments() {
         const res = await api.get(`/appointments/patient/${user._id || user.id}`)
         setAppointments(res.data.data || [])
       } catch (err) {
-        console.error('Error fetching appointments:', err)
+        showError('Failed to load appointments.')
       } finally {
         setLoading(false)
       }

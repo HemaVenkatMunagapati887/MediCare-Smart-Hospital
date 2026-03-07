@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Calendar, Clock, User, CheckCircle, ChevronRight, Check } from 'lucide-react'
+import { showSuccess } from '../../utils/toast'
 
 const doctors = [
   { id: 1, name: 'Dr. Ravi Kumar', spec: 'Cardiologist', exp: '12 Years Experience' },
@@ -17,7 +18,7 @@ export default function BookAppointment() {
   const [selectedTime, setSelectedTime] = useState('')
 
   const handleBook = () => {
-    alert(`Appointment Booked successfully with ${doctors.find(d => d.id === selectedDoctor)?.name} on ${selectedDate} at ${selectedTime}!`)
+    showSuccess(`Appointment booked successfully with ${doctors.find(d => d.id === selectedDoctor)?.name} on ${selectedDate} at ${selectedTime}!`)
     setStep(1); setSelectedDoctor(null); setSelectedDate(''); setSelectedTime('')
   }
 

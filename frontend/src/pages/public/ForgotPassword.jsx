@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { HeartPulse, Mail, Lock, Eye, EyeOff, ArrowLeft, KeyRound, CheckCircle2 } from 'lucide-react'
+import { HeartPulse, Mail, Lock, Eye, EyeOff, ArrowLeft, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
 import api from '../../services/api'
+import { showSuccess, showError, getErrorMessage } from '../../utils/toast'
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1) // 1=email, 2=otp, 3=new password
@@ -13,8 +14,7 @@ export default function ForgotPassword() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const navigate = useNavigate()
   const otpRefs = [useRef(), useRef(), useRef(), useRef()]
 
@@ -22,14 +22,13 @@ export default function ForgotPassword() {
   const handleSendOtp = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
-    setSuccess('')
+    setFieldErrors({})
     try {
       const res = await api.post('/auth/forgot-password', { email })
-      setSuccess(res.data.message || 'OTP sent to your email!')
+      showSuccess(res.data.message || 'OTP sent to your email!')
       setStep(2)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send OTP')
+      showError(getErrorMessage(err, 'Failed to send OTP'))
     } finally {
       setLoading(false)
     }
@@ -67,19 +66,18 @@ export default function ForgotPassword() {
     e.preventDefault()
     const otpCode = otp.join('')
     if (otpCode.length !== 4) {
-      setError('Please enter the complete 4-digit OTP')
+      setFieldErrors({ otp: 'Please enter the complete 4-digit OTP' })
       return
     }
     setLoading(true)
-    setError('')
-    setSuccess('')
+    setFieldErrors({})
     try {
       const res = await api.post('/auth/verify-otp', { email, otp: otpCode })
       setResetToken(res.data.resetToken)
-      setSuccess('OTP verified successfully!')
+      showSuccess('OTP verified successfully!')
       setStep(3)
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP')
+      showError(getErrorMessage(err, 'Invalid OTP'))
     } finally {
       setLoading(false)
     }
@@ -89,22 +87,21 @@ export default function ForgotPassword() {
   const handleResetPassword = async (e) => {
     e.preventDefault()
     if (password !== confirmPassword) {
-      setError('Passwords do not match!')
+      setFieldErrors({ confirm: 'Passwords do not match!' })
       return
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+      setFieldErrors({ password: 'Password must be at least 6 characters' })
       return
     }
     setLoading(true)
-    setError('')
-    setSuccess('')
+    setFieldErrors({})
     try {
       const res = await api.post('/auth/reset-password', { resetToken, password, confirmPassword })
-      setSuccess(res.data.message || 'Password reset successful!')
+      showSuccess(res.data.message || 'Password reset successful!')
       setTimeout(() => navigate('/login'), 2000)
     } catch (err) {
-      setError(err.response?.data?.message || 'Password reset failed')
+      showError(getErrorMessage(err, 'Password reset failed'))
     } finally {
       setLoading(false)
     }
@@ -113,14 +110,13 @@ export default function ForgotPassword() {
   // Resend OTP
   const handleResendOtp = async () => {
     setLoading(true)
-    setError('')
-    setSuccess('')
+    setFieldErrors({})
     setOtp(['', '', '', ''])
     try {
       const res = await api.post('/auth/forgot-password', { email })
-      setSuccess(res.data.message || 'New OTP sent to your email!')
+      showSuccess(res.data.message || 'New OTP sent to your email!')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to resend OTP')
+      showError(getErrorMessage(err, 'Failed to resend OTP'))
     } finally {
       setLoading(false)
     }
@@ -163,9 +159,6 @@ export default function ForgotPassword() {
         </div>
 
         <div className="card shadow-md">
-          {error && <div className="mb-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 text-center animate-fadeIn">{error}</div>}
-          {success && <div className="mb-4 bg-green-50 text-green-600 text-sm p-3 rounded-lg border border-green-100 text-center animate-fadeIn">{success}</div>}
-
           {/* Step 1: Enter Email */}
           {step === 1 && (
             <form onSubmit={handleSendOtp} className="space-y-4">
@@ -205,6 +198,9 @@ export default function ForgotPassword() {
                   />
                 ))}
               </div>
+              {fieldErrors.otp && (
+                <p className="text-center text-xs text-red-500 flex items-center justify-center gap-1"><AlertCircle size={12} /> {fieldErrors.otp}</p>
+              )}
 
               <button type="submit" disabled={loading}
                 className="w-full btn-primary py-3 flex items-center justify-center gap-2">
@@ -236,6 +232,9 @@ export default function ForgotPassword() {
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>
+                {fieldErrors.password && (
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1"><AlertCircle size={12} /> {fieldErrors.password}</p>
+                )}
               </div>
 
               <div className="form-group">
@@ -259,6 +258,9 @@ export default function ForgotPassword() {
                       ? <><CheckCircle2 size={12} /> Passwords match</>
                       : '✗ Passwords do not match'}
                   </p>
+                )}
+                {fieldErrors.confirm && (
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1"><AlertCircle size={12} /> {fieldErrors.confirm}</p>
                 )}
               </div>
 
