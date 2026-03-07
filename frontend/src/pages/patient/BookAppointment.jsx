@@ -10,7 +10,7 @@ const doctors = [
 ]
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, User, CheckCircle, ChevronRight, Check, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, User, CheckCircle, ChevronRight, Check, AlertCircle, Activity } from 'lucide-react'
 import api from '../../services/api'
 
 const timeSlots = ['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '04:00 PM', '04:30 PM', '05:00 PM']
@@ -23,6 +23,7 @@ export default function BookAppointment() {
   const [selectedDoctor, setSelectedDoctor] = useState(null)
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
+  const [medicalNotes, setMedicalNotes] = useState('')
   const [bookingLoading, setBookingLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -51,7 +52,7 @@ export default function BookAppointment() {
         doctor: selectedDoctor,
         date: selectedDate,
         timeSlot: selectedTime,
-        reason: 'Consultation', // Default reason
+        reason: medicalNotes || 'General Consultation',
       }
 
   const handleBook = () => {
@@ -232,6 +233,20 @@ export default function BookAppointment() {
                     <span className="text-gray-500 font-medium flex items-center gap-2"><User size={16} className="text-blue-500" /> Booking Type</span>
                     <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md text-sm">Consultation</span>
                   </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <Activity size={16} className="text-blue-500" /> Medical Notes / Symptoms
+                  </label>
+                  <textarea 
+                    rows={3}
+                    className="form-input bg-gray-50 border-gray-100 focus:bg-white resize-none"
+                    placeholder="E.g., Chronic back pain, Penicillin allergy, or reason for visit..."
+                    value={medicalNotes}
+                    onChange={(e) => setMedicalNotes(e.target.value)}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-2 italic">This information will be shared with your doctor for better diagnosis.</p>
                 </div>
               </div>
             </div>

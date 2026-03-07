@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Calendar, Clock, Video, FileText, Activity, Users, CheckCircle, Phone, Mail, MapPin, HeartPulse } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Calendar, Clock, Video, FileText, Activity, Users, CheckCircle, Phone, Mail, MapPin, HeartPulse, ExternalLink } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 
 export default function PatientDetails() {
   const { user } = useAuth()
+  const { id: urlPatientId } = useParams()
+  const navigate = useNavigate()
   const [patients, setPatients] = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const historyRef = useRef(null)
 
   const isDemoDoctor = user?.email === 'sneha@medicare.com' || user?.email === 'suresh@medicare.com'
 
@@ -66,17 +70,32 @@ export default function PatientDetails() {
           },
           { id: 'demo3', name: 'Anitha S.', age: 42, gender: 'Female', bloodGroup: 'A-', phone: '+91 77777 66666', email: 'anitha@gmail.com', address: 'Cyberabad, TG', visits: [] },
         ]
-        setPatients([...demoPatients, ...finalPatients])
-        setSelected(demoPatients[0])
+        const merged = [...demoPatients, ...finalPatients]
+        setPatients(merged)
+        
+        // Use patient from URL if present
+        if (urlPatientId) {
+          const found = merged.find(p => p.id === urlPatientId)
+          if (found) setSelected(found)
+          else setSelected(merged[0])
+        } else {
+          setSelected(merged[0])
+        }
       } else {
         setPatients(finalPatients)
-        if (finalPatients.length > 0) setSelected(finalPatients[0])
+        if (urlPatientId) {
+          const found = finalPatients.find(p => p.id === urlPatientId)
+          if (found) setSelected(found)
+          else if (finalPatients.length > 0) setSelected(finalPatients[0])
+        } else if (finalPatients.length > 0) {
+          setSelected(finalPatients[0])
+        }
       }
       setLoading(false)
     }
 
     if (user) fetchMyPatients()
-  }, [user, isDemoDoctor])
+  }, [user, isDemoDoctor, urlPatientId])
 
   const filteredPatients = patients.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -111,6 +130,25 @@ export default function PatientDetails() {
     if (selected) fetchPatientProfile()
   }, [selected?.id])
 
+  const handlePatientSelect = (p) => {
+    setSelected(p)
+    navigate(`/doctor/patients/${p.id}`)
+  }
+
+  const handleStartDiagnosis = () => {
+    if (!selected) return
+    navigate('/doctor/diagnosis', { 
+      state: { 
+        selectedPatientId: selected.id,
+        patientName: selected.name 
+      } 
+    })
+  }
+
+  const handleViewHistory = () => {
+    historyRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
@@ -138,7 +176,7 @@ export default function PatientDetails() {
         </div>
         <div className="overflow-y-auto flex-1 divide-y divide-gray-50">
           {filteredPatients.map(p => (
-            <div key={p.id} onClick={() => setSelected(p)}
+            <div key={p.id} onClick={() => handlePatientSelect(p)}
               className={`p-4 cursor-pointer transition-colors flex items-center gap-3 ${selected?.id === p.id ? 'bg-teal-50 border-l-4 border-l-teal-500' : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${selected?.id === p.id ? 'bg-teal-200 text-teal-800' : 'bg-gray-100 text-gray-600'}`}>
                 {p.name?.charAt(0)}
@@ -176,8 +214,8 @@ export default function PatientDetails() {
                   <span className="text-sm font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-lg flex items-center gap-1"><HeartPulse size={12} /> {selected.bloodGroup}</span>
                 </div>
                 <div className="mt-4 flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                  <button className="btn-primary py-2 px-5 text-sm flex items-center gap-2"><FileText size={16} /> View Full History</button>
-                  <button className="btn-secondary py-2 px-5 text-sm flex items-center gap-2"><Activity size={16} /> Start Diagnosis</button>
+                  <button onClick={handleViewHistory} className="btn-primary py-2 px-5 text-sm flex items-center gap-2"><FileText size={16} /> View Full History</button>
+                  <button onClick={handleStartDiagnosis} className="btn-secondary py-2 px-5 text-sm flex items-center gap-2"><Activity size={16} /> Start Diagnosis</button>
                 </div>
               </div>
             </div>
@@ -199,7 +237,7 @@ export default function PatientDetails() {
           </div>
 
           {/* Visits History */}
-          <div className="card shadow-sm border border-gray-100 p-0 overflow-hidden shrink-0">
+          <div ref={historyRef} className="card shadow-sm border border-gray-100 p-0 overflow-hidden shrink-0">
             <div className="p-5 border-b border-gray-100 bg-gray-50">
               <h3 className="font-bold text-gray-900 flex items-center gap-2"><Clock size={16} className="text-teal-600" /> Past Consultations</h3>
             </div>

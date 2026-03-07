@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Calendar, Clock, Video, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 
 export default function DoctorAppointments() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('All')
@@ -49,19 +51,28 @@ export default function DoctorAppointments() {
     if (user) fetchData()
   }, [user, isDemoDoctor])
 
-  const handleStatusUpdate = async (id, newStatus) => {
+  const handleStatusUpdate = async (appt, newStatus) => {
+    const id = appt._id
     // Check if it's a demo item (starts with 'd' or 'demo')
     const isDemoItem = String(id).startsWith('d')
-    if (isDemoItem) {
-      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a))
-      return
+    
+    if (!isDemoItem) {
+      try {
+        await api.put(`/appointments/${id}`, { status: newStatus })
+      } catch (err) {
+        console.error("Error updating appointment status:", err)
+      }
     }
 
-    try {
-      await api.put(`/appointments/${id}`, { status: newStatus })
-      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a))
-    } catch (err) {
-      console.error("Error updating appointment status:", err)
+    setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a))
+
+    if (newStatus === 'in-progress') {
+      navigate('/doctor/diagnosis', { 
+        state: { 
+          selectedPatientId: appt.patient?._id || appt.patient?.id || id,
+          patientName: appt.patient?.name 
+        } 
+      })
     }
   }
 
@@ -137,12 +148,12 @@ export default function DoctorAppointments() {
               {(app.status === 'Upcoming' || app.status === 'confirmed' || app.status.toLowerCase() === 'pending') && (
                 <>
                   <button 
-                    onClick={() => handleStatusUpdate(app._id, 'in-progress')}
+                    onClick={() => handleStatusUpdate(app, 'in-progress')}
                     className="flex-1 btn-primary py-2 text-xs flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white gap-1.5 shadow-sm">
                     {app.type === 'Online Call' ? <><Video size={14} /> Join</> : <><CheckCircle size={14} /> Start</>}
                   </button>
                   <button 
-                    onClick={() => handleStatusUpdate(app._id, 'cancelled')}
+                    onClick={() => handleStatusUpdate(app, 'cancelled')}
                     className="flex-1 px-4 py-2 bg-red-50 text-red-600 font-semibold rounded-xl text-xs hover:bg-red-100 transition-colors flex items-center justify-center gap-1">
                     <XCircle size={14} /> Cancel
                   </button>
@@ -150,7 +161,7 @@ export default function DoctorAppointments() {
               )}
               {(app.status === 'In Progress' || app.status === 'in-progress') && (
                 <button 
-                  onClick={() => handleStatusUpdate(app._id, 'completed')}
+                  onClick={() => handleStatusUpdate(app, 'completed')}
                   className="flex-1 btn-primary py-2 text-xs flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm">
                   <CheckCircle size={14} /> Mark Completed
                 </button>

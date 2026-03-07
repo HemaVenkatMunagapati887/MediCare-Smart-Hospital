@@ -1,28 +1,38 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Calendar, Users, Star, ArrowRight, Clock, Activity, HeartPulse } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 
 export default function DoctorDashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const handleStatusUpdate = async (id, newStatus) => {
+  const handleStatusUpdate = async (appt, newStatus) => {
+    const id = appt._id
     // Check if it's a demo item (starts with 'd' or 'demo')
     const isDemoItem = String(id).startsWith('d')
-    if (isDemoItem) {
-      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a))
-      return
+    
+    if (!isDemoItem) {
+      try {
+        await api.put(`/appointments/${id}`, { status: newStatus })
+      } catch (err) {
+        console.error("Error updating status:", err)
+      }
     }
 
-    try {
-      await api.put(`/appointments/${id}`, { status: newStatus })
-      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a))
-    } catch (err) {
-      console.error("Error updating status:", err)
+    setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a))
+
+    if (newStatus === 'in-progress') {
+      navigate('/doctor/diagnosis', { 
+        state: { 
+          selectedPatientId: appt.patient?._id || appt.patient?.id || id,
+          patientName: appt.patient?.name 
+        } 
+      })
     }
   }
 
@@ -144,7 +154,7 @@ export default function DoctorDashboard() {
                 <div>
                   {(a.status === 'Waiting' || a.status === 'confirmed' || a.status === 'pending') && (
                     <button 
-                      onClick={() => handleStatusUpdate(a._id, 'in-progress')}
+                      onClick={() => handleStatusUpdate(a, 'in-progress')}
                       className="px-4 py-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition-colors flex items-center gap-1"
                     >
                       Start <ArrowRight size={12} />
@@ -156,7 +166,7 @@ export default function DoctorDashboard() {
                          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> Ongoing
                        </span>
                        <button 
-                         onClick={() => handleStatusUpdate(a._id, 'completed')}
+                         onClick={() => handleStatusUpdate(a, 'completed')}
                          className="px-3 py-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
                        >
                          Complete

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Calendar, Clock, Video, FileText, CheckCircle, XCircle, User } from 'lucide-react'
+import { Calendar, Clock, Video, FileText, CheckCircle, XCircle, User, X, Activity, Stethoscope, Microscope, Download, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 import { showError } from '../../utils/toast'
@@ -9,14 +9,15 @@ export default function Appointments() {
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('All')
+  const [reportModal, setReportModal] = useState(null) // holds appointment data for the modal
+  const [reportRecords, setReportRecords] = useState([])
+  const [reportLoading, setReportLoading] = useState(false)
 
   const handleCancel = async (id) => {
-    // Check if it's a demo item
-    if (id.startsWith('demo') || id.startsWith('d')) {
+    if (String(id).startsWith('d')) {
       setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: 'cancelled' } : a))
       return
     }
-
     try {
       await api.put(`/appointments/${id}`, { status: 'cancelled' })
       setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: 'cancelled' } : a))
@@ -25,11 +26,27 @@ export default function Appointments() {
     }
   }
 
+  const handleViewReport = async (appointment) => {
+    setReportModal(appointment)
+    setReportRecords([])
+    setReportLoading(true)
+    try {
+      const patId = user?._id || user?.id
+      const res = await api.get(`/visits/patient/${patId}`)
+      const allVisits = res.data.data || []
+      setReportRecords(allVisits)
+    } catch (err) {
+      console.error('Error loading records for report:', err)
+      setReportRecords([])
+    } finally {
+      setReportLoading(false)
+    }
+  }
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         setLoading(true)
-        
         let realAppts = []
         if (user?._id || user?.id) {
           const res = await api.get(`/appointments/patient/${user._id || user.id}`)
@@ -84,7 +101,6 @@ export default function Appointments() {
   const filtered = appointments.filter(a => {
     if (filter === 'All') return true
     const backendStatus = a.status.toLowerCase()
-    
     if (filter === 'Upcoming') return backendStatus === 'pending' || backendStatus === 'confirmed'
     return backendStatus === filter.toLowerCase()
   })
@@ -166,11 +182,11 @@ export default function Appointments() {
                 </>
               )}
               {app.status === 'completed' && (
-                <>
-                  <button className="flex-1 btn-secondary py-2 text-xs flex items-center justify-center gap-1.5">
-                    <FileText size={14} /> View Report
-                  </button>
-                </>
+                <button 
+                  onClick={() => handleViewReport(app)}
+                  className="flex-1 btn-secondary py-2 text-xs flex items-center justify-center gap-1.5 hover:bg-blue-600 hover:text-white transition-all">
+                  <FileText size={14} /> View Report
+                </button>
               )}
             </div>
           </div>
@@ -185,8 +201,123 @@ export default function Appointments() {
           </div>
         )}
       </div>
+
+      {/* View Report Modal */}
+      {reportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-100">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2"><FileText size={20} /> Appointment Report</h2>
+                <p className="text-blue-100 text-sm mt-1">
+                  Dr. {reportModal.doctor?.user?.name || reportModal.doctor?.name || 'Unknown'} • {new Date(reportModal.date).toLocaleDateString()} • {reportModal.timeSlot}
+                </p>
+              </div>
+              <button onClick={() => setReportModal(null)} className="p-2 rounded-lg hover:bg-white/20 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+              {/* Appointment Summary */}
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Stethoscope size={16} className="text-blue-600" /> Appointment Summary
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-500 font-medium text-xs">Doctor</p>
+                    <p className="font-bold text-gray-900">Dr. {reportModal.doctor?.user?.name || reportModal.doctor?.name || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 font-medium text-xs">Specialization</p>
+                    <p className="font-bold text-gray-900">{reportModal.doctor?.specialization || 'General'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 font-medium text-xs">Date</p>
+                    <p className="font-bold text-gray-900">{new Date(reportModal.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 font-medium text-xs">Time</p>
+                    <p className="font-bold text-gray-900">{reportModal.timeSlot}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-gray-500 font-medium text-xs">Reason</p>
+                    <p className="font-bold text-gray-900">{reportModal.reason || 'General Consultation'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Medical Records */}
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Activity size={16} className="text-teal-600" /> Medical Records & Prescriptions
+                </h3>
+
+                {reportLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : reportRecords.length > 0 ? (
+                  <div className="space-y-3">
+                    {reportRecords.map((record, i) => (
+                      <div key={record._id || i} className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-blue-200 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              record.recordType === 'Lab Report' ? 'bg-purple-50 text-purple-600' : 
+                              record.recordType === 'Prescription' ? 'bg-blue-50 text-blue-600' : 
+                              'bg-teal-50 text-teal-600'
+                            }`}>
+                              {record.recordType === 'Lab Report' ? <Microscope size={18} /> : <FileText size={18} />}
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-900 text-sm">{record.title}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                By Dr. {record.doctor?.user?.name || record.doctor?.name || 'Staff'} • {new Date(record.createdAt).toLocaleDateString()}
+                              </p>
+                              {record.description && (
+                                <p className="text-xs text-gray-600 mt-2 bg-white p-2 rounded-lg border border-gray-100">{record.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase whitespace-nowrap ${
+                            record.recordType === 'Lab Report' ? 'bg-purple-100 text-purple-700' :
+                            record.recordType === 'Prescription' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {record.recordType || 'Record'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <AlertCircle size={32} className="mx-auto text-gray-300 mb-2" />
+                    <p className="text-gray-500 font-medium text-sm">No medical records found for this appointment.</p>
+                    <p className="text-gray-400 text-xs mt-1">Records will appear here once the doctor finalizes them.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-100 flex gap-3 bg-gray-50">
+              <button 
+                onClick={() => setReportModal(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-100 transition-colors">
+                Close
+              </button>
+              <button className="flex-1 btn-primary py-2.5 text-sm flex items-center justify-center gap-2">
+                <Download size={16} /> Download Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
-

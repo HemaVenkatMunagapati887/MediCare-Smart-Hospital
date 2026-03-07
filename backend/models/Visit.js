@@ -17,7 +17,7 @@ const medicalRecordSchema = new mongoose.Schema({
   description: String,
   fileUrl: {
     type: String,
-    required: [true, 'Please provide the file URL or path']
+    required: false
   },
   recordType: {
     type: String,
