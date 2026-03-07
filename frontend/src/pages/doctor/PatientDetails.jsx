@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Calendar, Clock, Video, FileText, Activity, Users, CheckCircle, Phone, Mail, MapPin, HeartPulse, ExternalLink } from 'lucide-react'
+import { Calendar, Clock, Video, FileText, Activity, Users, CheckCircle, Phone, Mail, MapPin, HeartPulse, ExternalLink, Bot } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
+import ReportSummaryPanel from '../../components/ReportSummaryPanel'
 
 export default function PatientDetails() {
   const { user } = useAuth()
@@ -12,6 +13,7 @@ export default function PatientDetails() {
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showReportPanel, setShowReportPanel] = useState(false)
   const historyRef = useRef(null)
 
   const isDemoDoctor = user?.email === 'sneha@medicare.com' || user?.email === 'suresh@medicare.com'
@@ -216,6 +218,7 @@ export default function PatientDetails() {
                 <div className="mt-4 flex flex-col sm:flex-row items-center sm:items-start gap-4">
                   <button onClick={handleViewHistory} className="btn-primary py-2 px-5 text-sm flex items-center gap-2"><FileText size={16} /> View Full History</button>
                   <button onClick={handleStartDiagnosis} className="btn-secondary py-2 px-5 text-sm flex items-center gap-2"><Activity size={16} /> Start Diagnosis</button>
+                  <button onClick={() => setShowReportPanel(true)} className="btn-secondary py-2 px-5 text-sm flex items-center gap-2 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"><Bot size={16} /> AI Report Analysis</button>
                 </div>
               </div>
             </div>
@@ -236,33 +239,111 @@ export default function PatientDetails() {
             </div>
           </div>
 
-          {/* Visits History */}
+          {/* Visits History - Enhanced Professional UI */}
           <div ref={historyRef} className="card shadow-sm border border-gray-100 p-0 overflow-hidden shrink-0">
-            <div className="p-5 border-b border-gray-100 bg-gray-50">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2"><Clock size={16} className="text-teal-600" /> Past Consultations</h3>
+            <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-blue-50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-gray-900 flex items-center gap-2 text-lg">
+                    <Clock size={18} className="text-teal-600" /> Medical History
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">Complete record of past consultations and treatments</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-center px-4 py-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+                    <p className="text-2xl font-black text-teal-600">{selected.visits.length}</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase">Total Visits</p>
+                  </div>
+                  {selected.visits.length > 0 && (
+                    <div className="text-center px-4 py-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+                      <p className="text-sm font-bold text-gray-700">{selected.visits[0]?.date}</p>
+                      <p className="text-xs font-bold text-gray-400 uppercase">Last Visit</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+            
             <div className="divide-y divide-gray-50">
               {selected.visits.length > 0 ? selected.visits.map((v, i) => (
-                <div key={i} className="p-5 hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-sm font-bold text-gray-800 flex items-center gap-1.5"><Calendar size={14} className="text-teal-600" /> {v.date}</span>
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm">
-                      <p className="text-xs font-bold uppercase text-gray-400 mb-1 flex items-center gap-1"><Activity size={12} /> Diagnosis</p>
-                      <p className="text-sm font-medium text-gray-800">{v.diag}</p>
+                <div key={i} className="p-6 hover:bg-gray-50/50 transition-all duration-200 relative group">
+                  {/* Timeline indicator */}
+                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-teal-200 via-teal-100 to-transparent hidden sm:block" />
+                  <div className="absolute left-[18px] top-6 w-4 h-4 rounded-full bg-teal-500 border-4 border-white shadow-sm hidden sm:block z-10" />
+                  
+                  <div className="sm:ml-8">
+                    {/* Header */}
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-100 text-teal-800 rounded-lg text-sm font-bold">
+                        <Calendar size={14} /> {v.date}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-medium">
+                        #{selected.visits.length - i}
+                      </span>
+                      {i === 0 && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-bold uppercase">Most Recent</span>
+                      )}
                     </div>
-                    <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm">
-                      <p className="text-xs font-bold uppercase text-gray-400 mb-1 flex items-center gap-1"><FileText size={12} /> Prescription</p>
-                      <p className="text-sm font-medium text-gray-800">{v.rx}</p>
+                    
+                    {/* Content Grid */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* Diagnosis Card */}
+                      <div className="bg-white border border-orange-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                            <Activity size={16} className="text-orange-500" />
+                          </div>
+                          <p className="text-xs font-bold uppercase text-orange-600 tracking-wider">Diagnosis & Symptoms</p>
+                        </div>
+                        <p className="text-sm font-medium text-gray-800 leading-relaxed">{v.diag || 'Not recorded'}</p>
+                      </div>
+                      
+                      {/* Prescription Card */}
+                      <div className="bg-white border border-blue-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <FileText size={16} className="text-blue-500" />
+                          </div>
+                          <p className="text-xs font-bold uppercase text-blue-600 tracking-wider">Prescription</p>
+                        </div>
+                        <p className="text-sm font-medium text-gray-800 leading-relaxed">{v.rx || 'No medications prescribed'}</p>
+                      </div>
                     </div>
+                    
+                    {/* Additional info row if available */}
+                    {(v.notes || v.followUp) && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        {v.notes && (
+                          <div className="flex items-start gap-2 text-sm">
+                            <span className="font-bold text-gray-500">Notes:</span>
+                            <span className="text-gray-700">{v.notes}</span>
+                          </div>
+                        )}
+                        {v.followUp && (
+                          <div className="flex items-center gap-2 text-sm mt-2">
+                            <span className="font-bold text-gray-500">Follow-up:</span>
+                            <span className="text-teal-700 font-medium">{v.followUp}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )) : (
-                <div className="p-10 text-center text-gray-500">
-                  <CheckCircle size={32} className="mx-auto text-gray-300 mb-2" />
-                  <p className="font-semibold">No past visits recorded.</p>
-                  <p className="text-sm mt-1">This is a new patient.</p>
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <FileText size={32} className="text-gray-300" />
+                  </div>
+                  <p className="font-bold text-gray-700 text-lg">No Medical History</p>
+                  <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
+                    This patient has no recorded visits yet. Start a diagnosis session to create their first medical record.
+                  </p>
+                  <button 
+                    onClick={handleStartDiagnosis} 
+                    className="mt-4 btn-primary py-2 px-5 text-sm inline-flex items-center gap-2"
+                  >
+                    <Activity size={16} /> Start First Diagnosis
+                  </button>
                 </div>
               )}
             </div>
@@ -274,6 +355,13 @@ export default function PatientDetails() {
           <p className="font-medium">Select a patient to view details</p>
         </div>
       )}
+
+      {/* AI Report Summary Panel */}
+      <ReportSummaryPanel 
+        isOpen={showReportPanel} 
+        onClose={() => setShowReportPanel(false)}
+        patientName={selected?.name}
+      />
     </div>
   )
 }

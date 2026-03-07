@@ -311,9 +311,23 @@ export default function Appointments() {
                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-100 transition-colors">
                 Close
               </button>
-              <button className="flex-1 btn-primary py-2.5 text-sm flex items-center justify-center gap-2">
-                <Download size={16} /> Download Report
-              </button>
+              {reportModal?.fileUrl ? (
+                <a
+                  href={reportModal.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 btn-primary py-2.5 text-sm flex items-center justify-center gap-2"
+                >
+                  <Download size={16} /> Download Report
+                </a>
+              ) : (
+                <button 
+                  disabled
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 text-gray-400 font-semibold text-sm cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Download size={16} /> No File Available
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,6 +1,9 @@
 const Visit = require('../models/Visit');
 const Doctor = require('../models/Doctor');
+const User = require('../models/User');
 const asyncHandler = require('express-async-handler');
+const sendEmail = require('../utils/sendEmail');
+const { diagnosisComplete } = require('../utils/emailTemplates');
 
 // @desc    Get all visits/medical records
 // @route   GET /api/v1/visits
@@ -41,7 +44,7 @@ exports.getVisits = asyncHandler(async (req, res, next) => {
 // @access  Private/Doctor
 exports.createVisit = asyncHandler(async (req, res, next) => {
   // Find the doctor's profile to get the proper Doctor document ID
-  const doctorProfile = await Doctor.findOne({ user: req.user.id });
+  const doctorProfile = await Doctor.findOne({ user: req.user.id }).populate('user', 'name email');
   
   if (!doctorProfile) {
     res.status(404);
@@ -59,6 +62,31 @@ exports.createVisit = asyncHandler(async (req, res, next) => {
       path: 'doctor',
       populate: { path: 'user', select: 'name email' }
     });
+
+  // Send email notification to patient
+  try {
+    if (populatedVisit.patient?.email) {
+      const emailTemplate = diagnosisComplete({
+        patientName: populatedVisit.patient.name || 'Patient',
+        doctorName: doctorProfile.user?.name || 'Your Doctor',
+        department: doctorProfile.department || doctorProfile.specialty || 'General',
+        diagnosis: populatedVisit.title || populatedVisit.description,
+        prescription: populatedVisit.description,
+        recordType: populatedVisit.recordType || 'Prescription',
+        visitDate: populatedVisit.createdAt,
+        followUpNotes: req.body.followUpNotes
+      });
+
+      await sendEmail({
+        to: populatedVisit.patient.email,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html
+      });
+    }
+  } catch (emailError) {
+    console.error('Failed to send diagnosis email notification:', emailError.message);
+    // Don't throw - visit was created successfully, email is secondary
+  }
 
   res.status(201).json({
     success: true,

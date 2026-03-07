@@ -237,9 +237,21 @@ export default function MedicalRecords() {
                         <p className="truncate">{r.description || '—'}</p>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        <button className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition-colors inline-flex">
-                          <Download size={18} />
-                        </button>
+                        {r.fileUrl ? (
+                          <a 
+                            href={r.fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition-colors inline-flex"
+                            title="Download or view report"
+                          >
+                            <Download size={18} />
+                          </a>
+                        ) : (
+                          <span className="text-gray-300 p-2 inline-flex cursor-not-allowed" title="No file attached">
+                            <Download size={18} />
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -285,9 +297,23 @@ export default function MedicalRecords() {
                 )}
 
                 <div className="flex gap-2 pt-3 border-t border-gray-50">
-                  <button className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 font-semibold text-xs rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5">
-                    <Download size={14} /> Download
-                  </button>
+                  {m.fileUrl ? (
+                    <a 
+                      href={m.fileUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 font-semibold text-xs rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Download size={14} /> Download
+                    </a>
+                  ) : (
+                    <button 
+                      disabled 
+                      className="flex-1 px-3 py-2 bg-gray-50 text-gray-400 font-semibold text-xs rounded-lg cursor-not-allowed flex items-center justify-center gap-1.5"
+                    >
+                      <Download size={14} /> No File
+                    </button>
+                  )}
                 </div>
               </div>
             ))

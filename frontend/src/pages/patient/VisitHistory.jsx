@@ -168,12 +168,29 @@ export default function VisitHistory() {
                   </div>
 
                   <div className="mt-5 pt-4 border-t border-gray-50 flex flex-wrap gap-2">
-                    <button className="px-4 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1.5">
-                      <Download size={14} /> Discharge Summary
-                    </button>
-                    {v.recordType === 'Lab Report' && (
-                      <button className="px-4 py-2 bg-purple-50 text-purple-700 text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1.5">
+                    {v.fileUrl && (
+                      <a
+                        href={v.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+                      >
+                        <Download size={14} /> Download Record
+                      </a>
+                    )}
+                    {v.recordType === 'Lab Report' && v.fileUrl && (
+                      <a
+                        href={v.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-purple-50 text-purple-700 text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-1.5"
+                      >
                         <FileText size={14} /> View Lab Report
+                      </a>
+                    )}
+                    {!v.fileUrl && (
+                      <button disabled className="px-4 py-2 bg-gray-50 text-gray-400 text-xs font-bold rounded-lg cursor-not-allowed flex items-center gap-1.5">
+                        <FileText size={14} /> No File
                       </button>
                     )}
                   </div>
