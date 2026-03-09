@@ -6,10 +6,16 @@ const appointmentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  patientName: {
+    type: String
+  },
   doctor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Doctor',
     required: true
+  },
+  doctorName: {
+    type: String
   },
   date: {
     type: Date,
@@ -86,10 +92,29 @@ const appointmentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Auto-generate meeting room ID for online consultations
+// Auto-populate names and meeting room ID before saving
 appointmentSchema.pre('save', async function () {
+  // Auto-generate meeting room ID for online consultations
   if (this.consultationType === 'online' && !this.meetingRoomId) {
     this.meetingRoomId = `medicarepro${this._id.toString()}`;
+  }
+
+  // Auto-populate patient name
+  if (!this.patientName && this.patient) {
+    const User = mongoose.model('User');
+    const user = await User.findById(this.patient).select('name').lean();
+    if (user) this.patientName = user.name;
+  }
+
+  // Auto-populate doctor name
+  if (!this.doctorName && this.doctor) {
+    const Doctor = mongoose.model('Doctor');
+    const doc = await Doctor.findById(this.doctor).select('user').lean();
+    if (doc) {
+      const User = mongoose.model('User');
+      const user = await User.findById(doc.user).select('name').lean();
+      if (user) this.doctorName = user.name;
+    }
   }
 });
 
