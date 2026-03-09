@@ -181,7 +181,31 @@ exports.updateAppointmentStatus = asyncHandler(async (req, res, next) => {
     throw new Error('Appointment not found');
   }
 
-  const { status, cancellationReason, notes } = req.body;
+  const { status, cancellationReason, notes, consultationType } = req.body;
+
+  // ── Handle consultation type update only (no status change) ──
+  if (!status && consultationType) {
+    if (!['in-person', 'online'].includes(consultationType)) {
+      res.status(400);
+      throw new Error('Invalid consultation type. Must be in-person or online');
+    }
+    // Only allow updating for pending/confirmed appointments
+    if (!['pending', 'confirmed'].includes(appointment.status)) {
+      res.status(400);
+      throw new Error('Can only change consultation type for pending or confirmed appointments');
+    }
+    appointment.consultationType = consultationType;
+    // Auto-generate meetingRoomId for online consultations
+    if (consultationType === 'online' && !appointment.meetingRoomId) {
+      appointment.meetingRoomId = `medicarepro${appointment._id.toString()}`;
+    }
+    appointment = await appointment.save();
+    return res.status(200).json({
+      success: true,
+      message: `Consultation type updated to ${consultationType}`,
+      data: appointment
+    });
+  }
 
   // Permission check
   if (req.user.role === 'patient') {
@@ -189,7 +213,7 @@ exports.updateAppointmentStatus = asyncHandler(async (req, res, next) => {
        res.status(401);
        throw new Error('Not authorized to modify this appointment');
     }
-    // Patients should ONLY be allowed to cancel
+    // Patients can only cancel or update consultation type
     if (status !== 'cancelled') {
         res.status(400);
         throw new Error('Patients can only cancel appointments');
@@ -223,12 +247,8 @@ exports.updateAppointmentStatus = asyncHandler(async (req, res, next) => {
 
   // Handle cancellation
   if (status === 'cancelled') {
-    if (!cancellationReason) {
-      res.status(400);
-      throw new Error('Cancellation reason is required');
-    }
     appointment.cancelledAt = new Date();
-    appointment.cancellationReason = cancellationReason;
+    appointment.cancellationReason = cancellationReason || 'Cancelled by user';
   }
 
   // Update appointment status

@@ -106,7 +106,7 @@ export default function PatientDashboard() {
           Your health dashboard is ready. {appointments.length > 0 ? `You have ${appointments.length} upcoming appointments.` : 'You have no appointments scheduled today.'}
         </p>
         <div className="flex flex-wrap gap-4">
-          <Link to="/patient/book" className="px-5 py-2.5 bg-white text-blue-700 font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 text-sm">
+          <Link to="/patient/book" className="px-5 py-2.5 bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-300 font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 text-sm">
             <Calendar size={16} /> Book Appointment
           </Link>
           <Link to="/patient/symptom-checker" className="px-5 py-2.5 bg-blue-700/50 hover:bg-blue-700/70 text-white font-medium rounded-xl border border-blue-500/30 transition-all flex items-center gap-2 text-sm backdrop-blur-sm">
@@ -146,7 +146,7 @@ export default function PatientDashboard() {
             <div className="p-5 space-y-4">
               {appointments.length > 0 ? (
                 appointments.map((a, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl hover:border-blue-200 hover:shadow-sm transition-all gap-4">
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-blue-200 dark:hover:border-blue-700 hover:shadow-sm transition-all gap-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 font-bold text-lg shadow-inner">
                         {a.doctor?.user?.name?.charAt(0) || 'D'}

@@ -26,6 +26,7 @@ export default function Login() {
   const { login, loginWithData }    = useAuth()
   const navigate     = useNavigate()
   const location     = useLocation()
+  const redirectUrl  = new URLSearchParams(location.search).get('redirect')
 
   // Show success toast if redirected from registration
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function Login() {
       showSuccess('Login successful!')
       if (role === 'admin')        navigate('/admin')
       else if (role === 'doctor')  navigate('/doctor')
-      else                         navigate('/patient')
+      else                         navigate(redirectUrl || '/patient')
     } catch (err) {
       const msg = getErrorMessage(err, 'Invalid email or password.')
       // Show inline for credential-specific errors
@@ -71,7 +72,7 @@ export default function Login() {
         const role = res.data.role
         if (role === 'admin') navigate('/admin')
         else if (role === 'doctor') navigate('/doctor')
-        else navigate('/patient')
+        else navigate(redirectUrl || '/patient')
       }
     } catch (err) {
       const msg = getErrorMessage(err, 'Google login failed. Please try again.')
@@ -167,7 +168,7 @@ export default function Login() {
                   onChange={e => setEmail(e.target.value)}
                   placeholder="yourname@gmail.com"
                   autoComplete="email"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white dark:bg-gray-800 placeholder-gray-400 transition-all"
                 />
               </div>
             </div>
@@ -189,7 +190,7 @@ export default function Login() {
                   onChange={e => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   autoComplete="current-password"
-                  className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white transition-all"
+                  className="w-full pl-10 pr-11 py-3 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white dark:bg-gray-800 placeholder-gray-400 transition-all"
                 />
                 <button type="button" onClick={() => setShowPwd(v => !v)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">

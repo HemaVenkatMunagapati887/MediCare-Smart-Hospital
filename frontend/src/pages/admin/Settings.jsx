@@ -4,6 +4,7 @@ import {
     User, Mail, Phone, Building2, Key, Eye, EyeOff, CheckCircle, AlertTriangle
 } from 'lucide-react'
 import { showSuccess } from '../../utils/toast'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const TABS = [
     { id: 'profile', label: 'Hospital Profile', icon: Building2 },
@@ -15,6 +16,7 @@ const TABS = [
 export default function AdminSettings() {
     const [tab, setTab] = useState('profile')
     const [showPass, setShowPass] = useState(false)
+    const { theme, setTheme } = useTheme()
 
     const [profile, setProfile] = useState({
         hospitalName: 'MediCare+ Hospital',
@@ -35,7 +37,7 @@ export default function AdminSettings() {
     })
 
     const [appearance, setAppearance] = useState({
-        theme: 'light',
+        theme: theme,
         primaryColor: '#2563EB',
         language: 'English',
         timezone: 'Asia/Kolkata',
@@ -55,11 +57,11 @@ export default function AdminSettings() {
             <div className="flex flex-col md:flex-row gap-6">
                 {/* Tabs */}
                 <div className="md:w-56 flex-shrink-0">
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-2 space-y-0.5">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-2 space-y-0.5">
                         {TABS.map(t => (
                             <button key={t.id} onClick={() => setTab(t.id)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === t.id ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}>
-                                <t.icon size={16} className={tab === t.id ? 'text-violet-600' : 'text-gray-400'} />
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === t.id ? 'bg-violet-50 text-violet-700 font-semibold dark:bg-violet-900/30 dark:text-violet-300' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'}`}>
+                                <t.icon size={16} className={tab === t.id ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400'} />
                                 {t.label}
                             </button>
                         ))}
@@ -193,8 +195,8 @@ export default function AdminSettings() {
                                 <label className="form-label">Theme</label>
                                 <div className="flex gap-3">
                                     {['light', 'dark'].map(t => (
-                                        <button key={t} onClick={() => setAppearance(p => ({ ...p, theme: t }))}
-                                            className={`flex-1 py-3 rounded-xl border-2 font-medium capitalize text-sm transition-all ${appearance.theme === t ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                                        <button key={t} onClick={() => { setAppearance(p => ({ ...p, theme: t })); setTheme(t) }}
+                                            className={`flex-1 py-3 rounded-xl border-2 font-medium capitalize text-sm transition-all ${(theme === t) ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:border-violet-400 dark:text-violet-300' : 'border-gray-200 text-gray-600 hover:border-gray-300 dark:border-gray-600 dark:text-gray-300 dark:hover:border-gray-500'}`}>
                                             {t === 'light' ? '☀️ Light Mode' : '🌙 Dark Mode'}
                                         </button>
                                     ))}

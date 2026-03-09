@@ -72,9 +72,25 @@ const appointmentSchema = new mongoose.Schema({
     type: String,
     enum: ['manual', 'waitlist', 'ai-suggestion'],
     default: 'manual'
+  },
+  // Telemedicine fields
+  consultationType: {
+    type: String,
+    enum: ['in-person', 'online'],
+    default: 'in-person'
+  },
+  meetingRoomId: {
+    type: String
   }
 }, {
   timestamps: true
+});
+
+// Auto-generate meeting room ID for online consultations
+appointmentSchema.pre('save', async function () {
+  if (this.consultationType === 'online' && !this.meetingRoomId) {
+    this.meetingRoomId = `medicarepro${this._id.toString()}`;
+  }
 });
 
 // Index for efficient queries

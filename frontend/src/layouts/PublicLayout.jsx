@@ -1,11 +1,21 @@
 import React from 'react'
-import { Outlet, Navigate } from 'react-router-dom'
+import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { HeartPulse } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
+const REDIRECT_PATHS = ['/', '/login', '/register', '/forgot-password']
+
 export default function PublicLayout() {
   const { user } = useAuth()
+  const { pathname } = useLocation()
+
+  // Redirect logged-in users away from the home/auth pages to their dashboard
+  if (user && REDIRECT_PATHS.includes(pathname)) {
+    if (user.role === 'admin') return <Navigate to="/admin" replace />
+    if (user.role === 'doctor') return <Navigate to="/doctor" replace />
+    return <Navigate to="/patient" replace />
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

@@ -22,6 +22,7 @@ const adminDoctorRoutes = require('./routes/adminDoctorRoutes');
 const schedulingRoutes = require('./routes/schedulingRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.use('/api/v1/admin-doctors', adminDoctorRoutes);
 app.use('/api/v1/scheduling', schedulingRoutes);
 app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/uploads', uploadRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

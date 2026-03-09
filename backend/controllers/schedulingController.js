@@ -126,7 +126,7 @@ exports.getSmartSuggestions = asyncHandler(async (req, res) => {
  * @access  Private (Patient)
  */
 exports.bookSmartAppointment = asyncHandler(async (req, res) => {
-  const { doctorId, date, timeSlot, visitType, reason, notes } = req.body;
+  const { doctorId, date, timeSlot, visitType, reason, notes, consultationType } = req.body;
 
   const result = await schedulingService.bookSmartAppointment({
     patientId: req.user.id,
@@ -135,7 +135,8 @@ exports.bookSmartAppointment = asyncHandler(async (req, res) => {
     timeSlot,
     visitType,
     reason,
-    notes
+    notes,
+    consultationType
   });
 
   res.status(201).json({

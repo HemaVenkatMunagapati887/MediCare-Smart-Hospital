@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, Video, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, Video, User, CheckCircle, XCircle, MapPin } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 
@@ -53,9 +53,8 @@ export default function DoctorAppointments() {
 
   const handleStatusUpdate = async (appt, newStatus) => {
     const id = appt._id
-    // Check if it's a demo item (starts with 'd' or 'demo')
     const isDemoItem = String(id).startsWith('d')
-    
+
     if (!isDemoItem) {
       try {
         await api.put(`/appointments/${id}`, { status: newStatus })
@@ -67,13 +66,25 @@ export default function DoctorAppointments() {
     setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a))
 
     if (newStatus === 'in-progress') {
-      navigate('/doctor/diagnosis', { 
-        state: { 
+      navigate('/doctor/diagnosis', {
+        state: {
           selectedAppointmentId: id,
-          patientName: appt.patient?.name 
-        } 
+          patientName: appt.patient?.name
+        }
       })
     }
+  }
+
+  // Determine if an appointment is an online video consultation
+  const isOnline = (app) =>
+    app.consultationType === 'online' || app.type === 'Online Call'
+
+  const handleStartVideoCall = (app) => {
+    navigate(`/video-room/${app._id}`)
+  }
+
+  const handleStartConsultation = async (app) => {
+    await handleStatusUpdate(app, 'in-progress')
   }
 
   const filtered = appointments.filter(a => {
@@ -139,20 +150,30 @@ export default function DoctorAppointments() {
                 <Clock size={16} className="text-teal-500" /> <span>{app.timeSlot}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
-                {app.type === 'Online Call' ? <Video size={16} className="text-blue-500" /> : <User size={16} className="text-purple-500" />}
-                <span>{app.type || 'In-Person Visit'}</span>
+                {isOnline(app) ? <Video size={16} className="text-blue-500" /> : <MapPin size={16} className="text-purple-500" />}
+                <span className={`font-semibold ${isOnline(app) ? 'text-blue-600' : 'text-purple-600'}`}>
+                  {isOnline(app) ? 'Online Video Call' : 'In-Person Visit'}
+                </span>
               </div>
             </div>
 
             <div className="pt-4 border-t border-gray-100 flex gap-2">
               {(app.status === 'Upcoming' || app.status === 'confirmed' || app.status.toLowerCase() === 'pending') && (
                 <>
-                  <button 
-                    onClick={() => handleStatusUpdate(app, 'in-progress')}
-                    className="flex-1 btn-primary py-2 text-xs flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white gap-1.5 shadow-sm">
-                    {app.type === 'Online Call' ? <><Video size={14} /> Join</> : <><CheckCircle size={14} /> Start</>}
-                  </button>
-                  <button 
+                  {isOnline(app) ? (
+                    <button
+                      onClick={() => handleStartVideoCall(app)}
+                      className="flex-1 py-2 text-xs flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition-all">
+                      <Video size={14} /> Start Video Call
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleStartConsultation(app)}
+                      className="flex-1 btn-primary py-2 text-xs flex items-center justify-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white shadow-sm">
+                      <CheckCircle size={14} /> Start Consultation
+                    </button>
+                  )}
+                  <button
                     onClick={() => handleStatusUpdate(app, 'cancelled')}
                     className="flex-1 px-4 py-2 bg-red-50 text-red-600 font-semibold rounded-xl text-xs hover:bg-red-100 transition-colors flex items-center justify-center gap-1">
                     <XCircle size={14} /> Cancel
@@ -160,9 +181,9 @@ export default function DoctorAppointments() {
                 </>
               )}
               {(app.status === 'In Progress' || app.status === 'in-progress') && (
-                <button 
+                <button
                   onClick={() => handleStatusUpdate(app, 'completed')}
-                  className="flex-1 btn-primary py-2 text-xs flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm">
+                  className="flex-1 btn-primary py-2 text-xs flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
                   <CheckCircle size={14} /> Mark Completed
                 </button>
               )}

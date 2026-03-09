@@ -391,28 +391,28 @@ export default function Diagnosis() {
                     {selectedPatientData?.appointmentId || (selectedApptId ? `APT-${selectedApptId.substring(0,6)}` : '—')}
                   </p>
                 </div>
-                <div className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-teal-100 dark:border-teal-900/50 shadow-sm">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Patient Name</p>
-                  <p className="text-sm font-bold text-gray-900">
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                     {selectedPatientData?.patient?.name || selectedPatientData?.patient?.user?.name || 'Unknown'}
                   </p>
                 </div>
-                <div className="bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-teal-100 dark:border-teal-900/50 shadow-sm">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Appointment Slot</p>
-                  <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
                     <Clock size={14} className="text-teal-600" /> {selectedPatientData?.timeSlot || 'N/A'}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Status: <span className="font-semibold text-teal-700">{selectedPatientData?.status}</span></p>
+                  <p className="text-xs text-gray-500 mt-1">Status: <span className="font-semibold text-teal-700 dark:text-teal-300">{selectedPatientData?.status}</span></p>
                 </div>
                 {selectedPatientData?.reason && (
-                  <div className="bg-white p-3 rounded-xl border border-orange-100 shadow-sm border-l-4 border-l-orange-400">
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-orange-100 dark:border-orange-900/50 shadow-sm border-l-4 border-l-orange-400">
                     <p className="text-xs text-gray-400 font-bold uppercase mb-1">Visit Reason</p>
-                    <p className="text-sm font-bold text-orange-700">{selectedPatientData.reason}</p>
+                    <p className="text-sm font-bold text-orange-700 dark:text-orange-400">{selectedPatientData.reason}</p>
                   </div>
                 )}
-                <div className="bg-white p-3 rounded-xl border border-red-100 shadow-sm border-l-4 border-l-red-500">
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-red-100 dark:border-red-900/50 shadow-sm border-l-4 border-l-red-500">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Allergy Note</p>
-                  <p className="text-sm font-bold text-red-700">
+                  <p className="text-sm font-bold text-red-700 dark:text-red-400">
                     {isDemoDoctor ? 'Penicillin Allergy' : 'No known allergies on record'}
                   </p>
                 </div>
@@ -476,7 +476,7 @@ export default function Diagnosis() {
       {/* AI Safety Check Panel Modal */}
       {showSafetyPanel && safetyCheck && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fadeIn">
+          <div className="bg-white dark:bg-gray-850 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fadeIn">
             {/* Header */}
             <div className={`p-6 border-b ${safetyCheck.safetyStatus === 'danger' ? 'bg-red-50' : safetyCheck.safetyStatus === 'warning' ? 'bg-orange-50' : 'bg-green-50'}`}>
               <div className="flex items-start justify-between">

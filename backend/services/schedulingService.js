@@ -25,7 +25,8 @@ const bookSmartAppointment = async (params) => {
     timeSlot,
     visitType = 'First Consultation',
     reason,
-    notes = ''
+    notes = '',
+    consultationType = 'in-person'
   } = params;
 
   // Validate required fields
@@ -73,7 +74,8 @@ const bookSmartAppointment = async (params) => {
     notes,
     noShowProbability: prediction.probability,
     status: 'confirmed',
-    bookedVia: 'manual'
+    bookedVia: 'manual',
+    consultationType
   });
 
   // Send confirmation email

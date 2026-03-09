@@ -47,6 +47,7 @@ const AdminSettings = React.lazy(() => import('./pages/admin/Settings'))
 // AI
 const Chatbot = React.lazy(() => import('./pages/ai/Chatbot'))
 const ReportSummary = React.lazy(() => import('./pages/ai/ReportSummary'))
+const VideoRoom = React.lazy(() => import('./pages/VideoRoom'))
 
 import ProtectedRoute from './components/ProtectedRoute'
 import FloatingChatbot from './components/FloatingChatbot'
@@ -111,6 +112,19 @@ export default function App() {
             <Suspense fallback={<LoadingFallback />}>
               <ReportSummary />
             </Suspense>
+          } />
+
+          {/* Video Room — full screen, no layout wrapper, accessible by patient & doctor */}
+          <Route path="/video-room/:appointmentId" element={
+            <ProtectedRoute allowedRoles={['patient', 'doctor']}>
+              <Suspense fallback={
+                <div className="fixed inset-0 bg-gray-900 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
+                </div>
+              }>
+                <VideoRoom />
+              </Suspense>
+            </ProtectedRoute>
           } />
 
           {/* Patient Routes */}

@@ -457,7 +457,7 @@ export default function Register() {
                     <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input required type={showPwd ? 'text' : 'password'} value={password}
                       onChange={e => setPassword(e.target.value)} placeholder="Create a strong password"
-                      className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
+                      className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
                     <button type="button" onClick={() => setShowPwd(v => !v)}
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                       {showPwd ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -475,7 +475,7 @@ export default function Register() {
                     <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input required type={showCfm ? 'text' : 'password'} value={confirm}
                       onChange={e => setConfirm(e.target.value)} placeholder="Re-enter your password"
-                      className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
+                      className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
                     <button type="button" onClick={() => setShowCfm(v => !v)}
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                       {showCfm ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -522,7 +522,7 @@ export default function Register() {
                     <User size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input required type="text" value={name} onChange={e => setName(e.target.value)}
                       placeholder="Enter your full name"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
                   </div>
                 </div>
 
@@ -533,7 +533,7 @@ export default function Register() {
                     <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input required type="email" value={email} onChange={e => { setEmail(e.target.value); setFieldErrors(f => ({...f, email: ''})) }}
                       placeholder="yourname@gmail.com"
-                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all ${fieldErrors.email ? 'border-red-400' : 'border-gray-200'}`} />
+                      className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all ${fieldErrors.email ? 'border-red-400' : 'border-gray-200'}`} />
                   </div>
                   {fieldErrors.email && (
                     <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1"><AlertCircle size={12} /> {fieldErrors.email}
@@ -580,7 +580,7 @@ export default function Register() {
                     <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input required type={showPwd ? 'text' : 'password'} value={password}
                       onChange={e => setPassword(e.target.value)} placeholder="Create a strong password"
-                      className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
+                      className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
                     <button type="button" onClick={() => setShowPwd(v => !v)}
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                       {showPwd ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -599,7 +599,7 @@ export default function Register() {
                     <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input required type={showCfm ? 'text' : 'password'} value={confirm}
                       onChange={e => setConfirm(e.target.value)} placeholder="Re-enter your password"
-                      className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
+                      className="w-full pl-10 pr-11 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 focus:bg-white transition-all" />
                     <button type="button" onClick={() => setShowCfm(v => !v)}
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                       {showCfm ? <EyeOff size={17} /> : <Eye size={17} />}

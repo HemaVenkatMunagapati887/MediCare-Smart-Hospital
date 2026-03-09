@@ -177,25 +177,25 @@ Patient shows signs of..."
 
               {/* Summary */}
               {report.summary && (
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">
                     <Activity size={18} className="text-blue-500" /> Summary
                   </h3>
-                  <p className="text-gray-800 font-medium leading-relaxed">{report.summary}</p>
+                  <p className="text-gray-800 dark:text-gray-200 font-medium leading-relaxed">{report.summary}</p>
                 </div>
               )}
 
               {/* Key Findings */}
               {report.keyFindings?.length > 0 && (
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">
                     <CheckCircle size={18} className="text-emerald-500" /> Key Findings
                   </h3>
                   <div className="space-y-2">
                     {report.keyFindings.map((finding, i) => (
-                      <div key={i} className="flex gap-3 items-start bg-gray-50 p-3 rounded-xl">
+                      <div key={i} className="flex gap-3 items-start bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
                         <CheckCircle size={18} className="text-emerald-500 mt-0.5 shrink-0" />
-                        <p className="text-gray-800 font-medium">{finding}</p>
+                        <p className="text-gray-800 dark:text-gray-200 font-medium">{finding}</p>
                       </div>
                     ))}
                   </div>
@@ -233,15 +233,15 @@ Patient shows signs of..."
 
               {/* Recommendations */}
               {report.recommendations?.length > 0 && (
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">
                     <Activity size={18} className="text-blue-500" /> AI Recommendations
                   </h3>
                   <div className="space-y-3">
                     {report.recommendations.map((rec, i) => (
-                      <div key={i} className="flex gap-3 items-start bg-blue-50/50 p-3 rounded-xl border border-blue-50">
+                      <div key={i} className="flex gap-3 items-start bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-50 dark:border-blue-800/40">
                         <CheckCircle size={18} className="text-blue-500 mt-0.5 shrink-0" />
-                        <p className="text-gray-800 font-medium">{rec}</p>
+                        <p className="text-gray-800 dark:text-gray-200 font-medium">{rec}</p>
                       </div>
                     ))}
                   </div>

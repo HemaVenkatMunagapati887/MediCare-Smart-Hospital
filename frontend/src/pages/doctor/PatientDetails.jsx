@@ -287,7 +287,7 @@ export default function PatientDetails() {
                     {/* Content Grid */}
                     <div className="grid md:grid-cols-2 gap-4">
                       {/* Diagnosis Card */}
-                      <div className="bg-white border border-orange-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="bg-white dark:bg-gray-800 border border-orange-100 dark:border-orange-900/40 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-2 mb-3">
                           <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
                             <Activity size={16} className="text-orange-500" />
@@ -298,7 +298,7 @@ export default function PatientDetails() {
                       </div>
                       
                       {/* Prescription Card */}
-                      <div className="bg-white border border-blue-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/40 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-2 mb-3">
                           <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                             <FileText size={16} className="text-blue-500" />

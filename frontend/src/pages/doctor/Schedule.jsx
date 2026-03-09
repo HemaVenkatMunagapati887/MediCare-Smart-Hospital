@@ -405,7 +405,7 @@ export default function Schedule() {
 
       {showSlotModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fadeIn">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fadeIn">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Plus size={20} className="text-teal-600" /> Add Custom Time Slot
             </h3>

@@ -1,10 +1,12 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Heart, Brain, Bone, Baby, Eye, Stethoscope,
   Star, ArrowRight, CheckCircle, Shield, Clock, Smartphone,
-  CalendarCheck, ClipboardList, UserCheck, ChevronRight, Phone, Mail, MapPin
+  CalendarCheck, ClipboardList, UserCheck, ChevronRight, Phone, Mail, MapPin,
+  UserRound, Loader2
 } from 'lucide-react'
+import api from '../../services/api'
 
 const services = [
   { icon: Heart, title: 'Cardiology', desc: 'Heart conditions, ECG & cardiovascular care', color: 'bg-red-50 text-red-600' },
@@ -13,13 +15,6 @@ const services = [
   { icon: Baby, title: 'Pediatrics', desc: 'Expert child healthcare from birth to teen', color: 'bg-pink-50 text-pink-600' },
   { icon: Eye, title: 'Ophthalmology', desc: 'Eye care, vision tests and surgery', color: 'bg-cyan-50 text-cyan-600' },
   { icon: Stethoscope, title: 'General Medicine', desc: 'Complete primary healthcare & checkups', color: 'bg-blue-50 text-blue-600' },
-]
-
-const doctors = [
-  { name: 'Dr. Ravi Kumar', spec: 'Cardiologist', exp: '12 Yrs', rating: 4.9, avail: true },
-  { name: 'Dr. Priya Sharma', spec: 'Neurologist', exp: '8 Yrs', rating: 4.8, avail: true },
-  { name: 'Dr. Arjun Mehta', spec: 'Orthopedic', exp: '15 Yrs', rating: 4.9, avail: false },
-  { name: 'Dr. Sneha Patel', spec: 'Pediatrician', exp: '10 Yrs', rating: 4.7, avail: true },
 ]
 
 const howItWorks = [
@@ -50,6 +45,16 @@ const features = [
 ]
 
 export default function Home() {
+  const [doctors, setDoctors] = useState([])
+  const [doctorsLoading, setDoctorsLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/doctors')
+      .then(res => setDoctors((res.data.data || []).slice(0, 4)))
+      .catch(() => setDoctors([]))
+      .finally(() => setDoctorsLoading(false))
+  }, [])
+
   return (
     <div>
       {/* Hero */}
@@ -146,29 +151,42 @@ export default function Home() {
             <span className="text-blue-600 text-xs font-bold uppercase tracking-widest">Our Experts</span>
             <h2 className="text-3xl font-bold text-gray-900 mt-2">Meet Our Top Doctors</h2>
           </div>
+
+          {doctorsLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 size={32} className="animate-spin text-blue-500" />
+            </div>
+          ) : doctors.length === 0 ? (
+            <p className="text-center text-gray-400 py-10">No doctors available at the moment.</p>
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-            {doctors.map(d => (
-              <div key={d.name} className="bg-white rounded-2xl p-5 border-2 border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all text-center group">
+            {doctors.map(d => {
+              const name = d.user?.name || 'Doctor'
+              const isAvail = d.availabilityStatus === 'available'
+              return (
+              <div key={d._id} className="bg-white rounded-2xl p-5 border-2 border-blue-100 shadow-sm hover:shadow-md hover:border-blue-300 transition-all text-center group">
                 <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <UserCheck size={28} className="text-blue-600" />
+                  <UserRound size={28} className="text-blue-600" />
                 </div>
-                <h3 className="font-bold text-gray-900 text-sm">{d.name}</h3>
-                <p className="text-blue-600 text-xs font-medium mt-0.5">{d.spec}</p>
-                <p className="text-gray-400 text-xs mt-0.5">{d.exp} Experience</p>
+                <h3 className="font-bold text-gray-900 text-sm">{name.startsWith('Dr.') ? name : `Dr. ${name}`}</h3>
+                <p className="text-blue-600 text-xs font-medium mt-0.5">{d.specialization}</p>
+                <p className="text-gray-400 text-xs mt-0.5">{d.experience} Yrs Experience</p>
                 <div className="flex items-center justify-center gap-1 mt-2">
                   <Star size={13} className="text-yellow-400 fill-yellow-400" />
-                  <span className="text-sm font-bold text-gray-700">{d.rating}</span>
+                  <span className="text-sm font-bold text-gray-700">{(d.ratings || 4.5).toFixed(1)}</span>
                 </div>
-                <span className={`inline-flex items-center gap-1 mt-3 text-xs px-2.5 py-1 rounded-full font-medium ${d.avail ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${d.avail ? 'bg-green-500' : 'bg-red-500'}`} />
-                  {d.avail ? 'Available Today' : 'Busy'}
+                <span className={`inline-flex items-center gap-1 mt-3 text-xs px-2.5 py-1 rounded-full font-medium ${isAvail ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAvail ? 'bg-green-500' : 'bg-red-500'}`} />
+                  {isAvail ? 'Available Today' : 'Busy'}
                 </span>
                 <Link to="/register" className="mt-4 block w-full py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-all">
                   Book Appointment
                 </Link>
               </div>
-            ))}
+              )
+            })}
           </div>
+          )}
           <div className="text-center mt-8">
             <Link to="/doctors" className="inline-flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all">
               View All Doctors <ArrowRight size={16} />

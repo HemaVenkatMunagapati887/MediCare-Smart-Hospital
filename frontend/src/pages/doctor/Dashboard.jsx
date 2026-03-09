@@ -109,7 +109,7 @@ export default function DoctorDashboard() {
           <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-sm font-semibold flex items-center gap-2 border border-white/30 text-white">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> On Duty
           </span>
-          <Link to="/doctor/appointments" className="px-4 py-2 bg-white text-teal-700 font-bold rounded-xl shadow-sm text-sm hover:shadow-md transition-shadow">
+          <Link to="/doctor/appointments" className="px-4 py-2 bg-white dark:bg-gray-800 text-teal-700 dark:text-teal-300 font-bold rounded-xl shadow-sm text-sm hover:shadow-md transition-shadow">
             View Schedule
           </Link>
         </div>
@@ -191,11 +191,11 @@ export default function DoctorDashboard() {
             <p className="text-sm text-gray-500 max-w-sm mx-auto mt-1 mb-4">Jump straight into patient diagnosis or manage your weekly schedule.</p>
           </div>
           <div className="w-full space-y-3 max-w-sm">
-            <Link to="/doctor/diagnosis" className="w-full bg-white border border-gray-200 text-gray-900 font-semibold py-3 px-4 rounded-xl shadow-sm hover:border-teal-400 hover:text-teal-700 transition-all flex items-center justify-between group">
+            <Link to="/doctor/diagnosis" className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 font-semibold py-3 px-4 rounded-xl shadow-sm hover:border-teal-400 dark:hover:border-teal-500 hover:text-teal-700 dark:hover:text-teal-300 transition-all flex items-center justify-between group">
               <span className="flex items-center gap-2"><Activity size={18} className="text-teal-500" /> Add Diagnosis</span>
               <ArrowRight size={16} className="text-gray-400 group-hover:text-teal-500 group-hover:translate-x-1 transition-all" />
             </Link>
-            <Link to="/doctor/schedule" className="w-full bg-white border border-gray-200 text-gray-900 font-semibold py-3 px-4 rounded-xl shadow-sm hover:border-teal-400 hover:text-teal-700 transition-all flex items-center justify-between group">
+            <Link to="/doctor/schedule" className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 font-semibold py-3 px-4 rounded-xl shadow-sm hover:border-teal-400 dark:hover:border-teal-500 hover:text-teal-700 dark:hover:text-teal-300 transition-all flex items-center justify-between group">
               <span className="flex items-center gap-2"><Calendar size={18} className="text-teal-500" /> Edit My Schedule</span>
               <ArrowRight size={16} className="text-gray-400 group-hover:text-teal-500 group-hover:translate-x-1 transition-all" />
             </Link>
