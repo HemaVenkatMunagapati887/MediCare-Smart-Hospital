@@ -1,0 +1,323 @@
+================================================================
+  MediCare Smart Hospital — Team Work Distribution (6 Members)
+================================================================
+Project: Smart Hospital Scheduling System (MERN Stack)
+Date: March 2026
+================================================================
+
+
+----------------------------------------------------------------
+  MEMBER 1 — Authentication & Security Lead
+----------------------------------------------------------------
+Role: Backend Auth + Middleware + User Management
+
+Files to Own:
+  Backend:
+    - backend/controllers/authController.js
+    - backend/routes/authRoutes.js
+    - backend/models/User.js
+    - backend/middleware/authMiddleware.js
+    - backend/middleware/roleMiddleware.js
+    - backend/utils/generateToken.js
+    - backend/utils/validatePassword.js
+  Frontend:
+    - frontend/src/pages/public/         (Login, Register, ForgotPassword)
+    - frontend/src/contexts/AuthContext.jsx
+    - frontend/src/components/ProtectedRoute.jsx
+    - frontend/src/services/auth.js
+
+Feature Improvements to Implement:
+  1. Add refresh token rotation — store refreshToken in User model,
+     issue short-lived access tokens
+  2. Add login attempt rate limiting per-user (lockout after 5 failed attempts)
+  3. Add email-based 2FA stub in the register/login flow
+  4. Improve validatePassword.js — add strength scoring
+     (uppercase, special chars, length checks)
+  5. Add GET /api/v1/auth/me route returning current user profile with role
+  6. Add lastLogin and loginHistory fields to the User model
+
+Example Commit Messages:
+  feat(auth): add refresh token rotation with 7-day expiry
+  feat(auth): lock account after 5 failed login attempts
+  fix(auth): resolve token expiry not clearing httpOnly cookie on logout
+  feat(auth): add password strength validator with scoring system
+  feat(middleware): extend roleMiddleware to support multi-role access
+  style(auth): refactor login/register pages to use unified form hook
+
+
+----------------------------------------------------------------
+  MEMBER 2 — Doctor Management Lead
+----------------------------------------------------------------
+Role: Doctor CRUD + Admin-Doctor Features + Doctor Frontend
+
+Files to Own:
+  Backend:
+    - backend/controllers/doctorController.js
+    - backend/controllers/adminDoctorController.js
+    - backend/routes/doctorRoutes.js
+    - backend/routes/adminDoctorRoutes.js
+    - backend/models/Doctor.js
+    - backend/models/AdminDoctor.js
+  Frontend:
+    - frontend/src/pages/doctor/         (all doctor pages)
+    - frontend/src/layouts/DoctorLayout.jsx
+
+Feature Improvements to Implement:
+  1. Add doctor availability calendar — extend Doctor model with
+     weeklySchedule field (days + time slots)
+  2. Add GET /api/v1/doctors/search with filters:
+     specialization, availability, location
+  3. Add doctor profile photo upload (integrate with Cloudinary config)
+  4. Add doctor statistics endpoint: total patients seen,
+     appointments this week, no-show rate
+  5. Build DoctorProfile.jsx page with ratings, bio, specialization,
+     and next available slot
+  6. Add soft-delete (isActive flag) for doctors instead of hard delete
+
+Example Commit Messages:
+  feat(doctor): add weekly schedule schema to Doctor model
+  feat(doctor): implement search endpoint with specialization and availability filters
+  feat(doctor): add profile photo upload via Cloudinary
+  feat(doctor): add doctor statistics summary endpoint
+  fix(doctor): resolve populate error on adminDoctor embedded references
+  feat(doctor-ui): build DoctorProfile page with availability calendar
+
+
+----------------------------------------------------------------
+  MEMBER 3 — Patient Management Lead
+----------------------------------------------------------------
+Role: Patient CRUD + Visit History + Patient Frontend
+
+Files to Own:
+  Backend:
+    - backend/controllers/patientController.js
+    - backend/controllers/visitController.js
+    - backend/routes/patientRoutes.js
+    - backend/routes/visitRoutes.js
+    - backend/models/Patient.js
+    - backend/models/Visit.js
+    - backend/utils/reportParser.js
+  Frontend:
+    - frontend/src/pages/patient/        (all patient pages)
+    - frontend/src/layouts/PatientLayout.jsx
+    - frontend/src/components/ReportSummaryPanel.jsx
+
+Feature Improvements to Implement:
+  1. Add medical history array field to Patient model
+     (conditions, allergies, medications)
+  2. Add PATCH /api/v1/patients/:id/medical-history endpoint
+  3. Add visit notes — allow doctors to add structured notes during a visit
+     (chief complaint, diagnosis, prescription)
+  4. Build PatientMedicalHistory.jsx page with a timeline view of past visits
+  5. Add report upload from the patient side — PDF lab report upload form
+  6. Add pagination to GET /api/v1/visits endpoint
+
+Example Commit Messages:
+  feat(patient): add medicalHistory and allergies fields to Patient model
+  feat(visit): add structured visit notes schema (diagnosis, prescription)
+  feat(patient): implement paginated visit history endpoint
+  feat(patient-ui): build medical history timeline page
+  fix(reportParser): handle malformed PDF gracefully with fallback message
+  feat(patient-ui): add lab report upload form to patient dashboard
+
+
+----------------------------------------------------------------
+  MEMBER 4 — Appointment & Notification System Lead
+----------------------------------------------------------------
+Role: Appointments + Waitlist + Email Notifications
+
+Files to Own:
+  Backend:
+    - backend/controllers/appointmentController.js
+    - backend/routes/appointmentRoutes.js
+    - backend/models/Appointment.js
+    - backend/models/Waitlist.js
+    - backend/services/waitlistService.js
+    - backend/services/notificationService.js
+    - backend/utils/sendEmail.js
+    - backend/utils/emailTemplates.js
+  Frontend:
+    - frontend/src/pages/patient/        (appointment booking pages)
+    - frontend/src/pages/doctor/         (appointment list/view for doctors)
+
+Feature Improvements to Implement:
+  1. Add appointment reminder emails — schedule 24 hours before using node-cron
+  2. Add PATCH /api/v1/appointments/:id/cancel with cancellation reason field
+  3. Improve emailTemplates.js — add HTML templates for booking confirmation,
+     cancellation, and reminder
+  4. Add waitlist auto-promotion — notify next waitlisted patient on cancellation
+  5. Add status history tracking to Appointment model
+     (log: scheduled → confirmed → completed)
+  6. Add GET /api/v1/appointments/upcoming filtered by doctor or patient
+
+Example Commit Messages:
+  feat(appointment): add 24-hour reminder email via node-cron scheduler
+  feat(waitlist): implement auto-promotion on appointment cancellation
+  feat(appointment): add cancellation endpoint with reason field
+  feat(email): build HTML email templates for booking confirmation
+  feat(appointment): add status history tracking to Appointment model
+  fix(appointment): resolve double-booking edge case in slot validation
+
+
+----------------------------------------------------------------
+  MEMBER 5 — Admin Dashboard & Reports Lead
+----------------------------------------------------------------
+Role: Admin Features + Analytics + Admin Frontend
+
+Files to Own:
+  Backend:
+    - backend/controllers/adminController.js
+    - backend/routes/adminRoutes.js
+    - backend/controllers/uploadController.js
+    - backend/routes/uploadRoutes.js
+    - backend/config/cloudinary.js
+    - backend/config/db.js
+  Frontend:
+    - frontend/src/pages/admin/          (all admin pages)
+    - frontend/src/layouts/AdminLayout.jsx
+
+Feature Improvements to Implement:
+  1. Add analytics endpoints — daily/weekly/monthly appointment counts,
+     top doctors, revenue estimation
+  2. Add GET /api/v1/admin/system-stats endpoint
+     (total users, active doctors, pending appointments)
+  3. Build AdminReports.jsx page with charts using Recharts
+     (appointment trends, department-wise load)
+  4. Add bulk actions in admin — deactivate multiple patients/doctors at once
+  5. Add CSV export for appointment and patient data
+  6. Improve db.js — add connection pool settings and reconnection logic
+     with exponential backoff
+
+Example Commit Messages:
+  feat(admin): add system stats dashboard endpoint
+  feat(admin): implement analytics endpoint for weekly appointment trends
+  feat(admin-ui): build reports page with Recharts bar and line charts
+  feat(admin): add CSV export for patient and appointment data
+  feat(db): add reconnection logic with exponential backoff
+  feat(upload): add file type and size validation middleware
+
+
+----------------------------------------------------------------
+  MEMBER 6 — AI Features & Frontend UI/UX Lead
+----------------------------------------------------------------
+Role: AI Services + Scheduling Algorithm + Shared UI Components
+
+Files to Own:
+  Backend:
+    - backend/controllers/aiController.js
+    - backend/controllers/schedulingController.js
+    - backend/routes/aiRoutes.js
+    - backend/routes/schedulingRoutes.js
+    - backend/services/aiService.js
+    - backend/services/schedulingService.js
+    - backend/services/availabilityService.js
+    - backend/services/noShowPredictionService.js
+    - backend/utils/slotGenerator.js
+  Frontend:
+    - frontend/src/pages/ai/             (Chatbot, ReportSummary)
+    - frontend/src/components/DoctorChatbot.jsx
+    - frontend/src/components/FloatingChatbot.jsx
+    - frontend/src/components/Navbar.jsx
+    - frontend/src/components/Sidebar.jsx
+    - frontend/src/components/SkeletonLoader.jsx
+    - frontend/src/contexts/ThemeContext.jsx
+    - frontend/src/services/ai.js
+    - frontend/src/services/scheduling.js
+
+Feature Improvements to Implement:
+  1. Add AI report summarization — POST parsed report text, get structured
+     summary (findings, recommendations)
+  2. Improve noShowPredictionService.js — add more prediction features
+     (patient history, day of week)
+  3. Add smart slot suggestion in schedulingService.js — optimal slots
+     based on doctor load balancing
+  4. Add dark mode toggle connected to ThemeContext.jsx
+  5. Add chat history persistence in DoctorChatbot.jsx via localStorage
+  6. Add SkeletonLoader variants for cards, tables, and profile sections
+
+Example Commit Messages:
+  feat(ai): add structured report summarization with findings extraction
+  feat(scheduling): implement load-balanced smart slot suggestion algorithm
+  feat(ai): improve no-show prediction with day-of-week and history features
+  feat(ui): implement dark mode toggle with ThemeContext and localStorage
+  feat(chatbot): persist chat history across sessions via localStorage
+  feat(ui): add skeleton loader variants for table and card layouts
+
+
+================================================================
+  GIT BRANCH STRATEGY
+================================================================
+
+Use GitHub Flow with a develop integration branch:
+
+  main          ← protected, production-ready
+    └── develop ← integration branch (all PRs merge here)
+          ├── feature/auth-refresh-token         (Member 1)
+          ├── feature/doctor-availability        (Member 2)
+          ├── feature/patient-medical-history    (Member 3)
+          ├── feature/appointment-reminders      (Member 4)
+          ├── feature/admin-analytics            (Member 5)
+          └── feature/ai-report-summary          (Member 6)
+
+Branch Naming Convention:
+  feature/<member-area>-<short-description>
+  fix/<member-area>-<short-description>
+
+
+================================================================
+  RECOMMENDED WORKFLOW
+================================================================
+
+Every member follows this workflow:
+
+  # 1. Clone the team repo (once)
+  git clone https://github.com/team-org/MediCare-Smart-Hospital.git
+  cd MediCare-Smart-Hospital
+
+  # 2. Create your feature branch from develop
+  git checkout develop
+  git pull origin develop
+  git checkout -b feature/auth-refresh-token
+
+  # 3. Make changes, then commit
+  git add backend/controllers/authController.js
+  git commit -m "feat(auth): add refresh token rotation with 7-day expiry"
+
+  # 4. Push your branch
+  git push origin feature/auth-refresh-token
+
+  # 5. Open a Pull Request → develop on GitHub
+  # 6. Another team member reviews and approves the PR
+  # 7. Merge into develop (Squash or Merge Commit)
+  # 8. Team leader periodically merges develop → main for releases
+
+
+================================================================
+  CONFLICT PREVENTION RULES
+================================================================
+
+  1. One member per controller    — No two members edit the same controller
+  2. Shared utils are owner-only  — Only the assigned member edits a util file;
+                                    others open a PR to the owner
+  3. server.js is team leader only — Only the team leader adds new route mounts
+  4. package.json needs discussion — Announce new packages in group chat first
+  5. Model changes need PR review  — Schema changes affect everyone;
+                                     always require at least 1 reviewer
+  6. Frontend pages are isolated   — Each member's pages are in their own
+                                     subfolder or route
+
+
+================================================================
+  WORK DISTRIBUTION SUMMARY
+================================================================
+
+  Member | Role                        | Backend Focus                          | Frontend Focus
+  -------|-----------------------------|----------------------------------------|-----------------------------
+  1      | Auth & Security             | authController, middleware/, User.js   | public/ pages, AuthContext
+  2      | Doctor Management           | doctorController, Doctor.js            | pages/doctor/, DoctorLayout
+  3      | Patient Management          | patientController, Patient.js, Visit.js| pages/patient/, ReportPanel
+  4      | Appointments & Notifications| appointmentController, Appointment.js  | Booking flow pages
+  5      | Admin & Analytics           | adminController, config/               | pages/admin/, AdminLayout
+  6      | AI & UI/UX                  | aiController, all AI services          | pages/ai/, components/
+
+================================================================
